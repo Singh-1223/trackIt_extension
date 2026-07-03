@@ -1,8 +1,9 @@
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { GroupSection } from "../components/GroupSection";
+import { HabitView } from "../components/HabitView";
 import { TodoList } from "../components/TodoList";
 import { getStore, openOptionsPage, saveStore, sortedTodos, upsertEntry } from "../lib/store";
-import { getTodayString } from "../lib/utils";
+import { formatDateLabel, getLastNDays, getTodayString } from "../lib/utils";
 import type { DayEntry, Todo, TrackItStore } from "../types/index";
 
 const TODAY = getTodayString();
@@ -27,11 +28,11 @@ export function App() {
     return () => chrome.storage.onChanged.removeListener(loadStore);
   }, [loadStore]);
 
-  function handleUpdate(taskId: string, patch: { done: boolean; comment: string }) {
+  function handleUpdate(date: string, taskId: string, patch: { done: boolean; comment: string }) {
     if (!store) return;
 
     const updatedEntries = upsertEntry(store.entries, {
-      date: TODAY,
+      date,
       taskId,
       done: patch.done,
       comment: patch.comment
@@ -50,8 +51,10 @@ export function App() {
   }
 
   const todayEntries: DayEntry[] = store ? store.entries.filter((e) => e.date === TODAY) : [];
+  const past7Days = getLastNDays(8).slice(1); // last 7 days excluding today
   const sortedGroups = store ? [...store.groups].sort((a, b) => a.order - b.order) : [];
   const pendingTodos = store ? sortedTodos(store.todos).pending : [];
+  const recentNotes = store ? [...(store.notes ?? [])].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5) : [];
 
   async function handleTodoSave(updated: Todo[]) {
     if (!store) return;
@@ -60,6 +63,17 @@ export function App() {
     saveRef.current = saveRef.current.then(async () => {
       try {
         await saveStore(updatedStore);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Save failed.");
+      }
+    });
+  }
+
+  function handleHabitSave(updated: TrackItStore) {
+    setStore(updated);
+    saveRef.current = saveRef.current.then(async () => {
+      try {
+        await saveStore(updated);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Save failed.");
       }
@@ -95,7 +109,7 @@ export function App() {
                 group={group}
                 tasks={groupTasks}
                 entries={todayEntries}
-                onUpdate={handleUpdate}
+                onUpdate={(taskId, patch) => handleUpdate(TODAY, taskId, patch)}
               />
             );
           })
@@ -124,6 +138,111 @@ export function App() {
               today={TODAY}
             />
           )}
+        </details>
+      )}
+
+      {/* Notes accordion */}
+      {store !== null && (
+        <details className="group-accordion" style={{ marginTop: 8 }}>
+          <summary className="group-accordion-summary">
+            <span className="group-accordion-chevron" aria-hidden="true" />
+            <span className="group-accordion-name">Notes</span>
+            {recentNotes.length > 0 && (
+              <span className="group-progress-badge">{(store.notes ?? []).length} notes</span>
+            )}
+          </summary>
+          {recentNotes.length === 0 ? (
+            <p className="muted" style={{ fontSize: "0.83rem", padding: "4px 2px 6px" }}>
+              No notes yet. Add them in the options page.
+            </p>
+          ) : (
+            <div className="group-task-list">
+              {recentNotes.map((note) => (
+                <details key={note.id} className="group-accordion" style={{ marginBottom: 6, overflow: "hidden" }}>
+                  <summary className="group-accordion-summary">
+                    <span className="group-accordion-chevron" aria-hidden="true" />
+                    <span style={{ fontSize: "0.9rem", fontWeight: 600, wordBreak: "break-word", overflowWrap: "anywhere" }}>{note.heading}</span>
+                  </summary>
+                  <div style={{ padding: "4px 16px 12px", overflow: "hidden" }}>
+                    {note.description ? (
+                      <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "anywhere" }}>
+                        {note.description}
+                      </span>
+                    ) : (
+                      <span className="muted" style={{ fontSize: "0.82rem" }}>No description.</span>
+                    )}
+                  </div>
+                </details>
+              ))}
+              {(store.notes ?? []).length > 5 && (
+                <p className="muted" style={{ fontSize: "0.82rem", padding: "4px 2px 2px" }}>
+                  +{(store.notes ?? []).length - 5} more — open options to see all
+                </p>
+              )}
+            </div>
+          )}
+        </details>
+      )}
+
+      {/* Build-Up accordion */}
+      {store !== null && (
+        <details className="group-accordion" style={{ marginTop: 8 }}>
+          <summary className="group-accordion-summary">
+            <span className="group-accordion-chevron" aria-hidden="true" />
+            <span className="group-accordion-name">Build-Up</span>
+            {(store.habits ?? []).length > 0 && (
+              <span className="group-progress-badge">{(store.habits ?? []).length} habit{(store.habits ?? []).length === 1 ? "" : "s"}</span>
+            )}
+          </summary>
+          <div style={{ padding: "8px 12px 12px" }}>
+            <HabitView store={store} onSave={handleHabitSave} compact={true} />
+          </div>
+        </details>
+      )}
+
+      {/* Past 7 days */}
+      {store !== null && sortedGroups.length > 0 && (
+        <details className="group-accordion" style={{ marginTop: 8 }}>
+          <summary className="group-accordion-summary">
+            <span className="group-accordion-chevron" aria-hidden="true" />
+            <span className="group-accordion-name">Past 7 Days</span>
+          </summary>
+          <div style={{ paddingTop: 4 }}>
+            {past7Days.map((date) => {
+              const dateEntries = store.entries.filter((e) => e.date === date);
+              const doneCount = dateEntries.filter((e) => e.done).length;
+              const totalCount = store.tasks.length;
+              return (
+                <details key={date} className="group-accordion" style={{ marginBottom: 4 }}>
+                  <summary className="group-accordion-summary">
+                    <span className="group-accordion-chevron" aria-hidden="true" />
+                    <span className="group-accordion-name" style={{ fontSize: "0.88rem" }}>
+                      {formatDateLabel(date)}
+                    </span>
+                    <span className="group-progress-badge">{doneCount} / {totalCount}</span>
+                  </summary>
+                  <div className="group-task-list" style={{ paddingTop: 4 }}>
+                    {sortedGroups.map((group) => {
+                      const groupTasks = store.tasks
+                        .filter((t) => t.groupId === group.id)
+                        .sort((a, b) => a.order - b.order);
+                      if (groupTasks.length === 0) return null;
+                      return (
+                        <GroupSection
+                          key={group.id}
+                          group={group}
+                          tasks={groupTasks}
+                          entries={dateEntries}
+                          onUpdate={(taskId, patch) => handleUpdate(date, taskId, patch)}
+                          commentPlaceholder={`Note for ${formatDateLabel(date)}…`}
+                        />
+                      );
+                    })}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
         </details>
       )}
 

@@ -6,9 +6,10 @@ interface GroupSectionProps {
   tasks: Task[];
   entries: DayEntry[];
   onUpdate: (taskId: string, patch: { done: boolean; comment: string }) => void;
+  commentPlaceholder?: string;
 }
 
-export function GroupSection({ group, tasks, entries, onUpdate }: GroupSectionProps) {
+export function GroupSection({ group, tasks, entries, onUpdate, commentPlaceholder }: GroupSectionProps) {
   const doneCount = tasks.filter((t) => entries.find((e) => e.taskId === t.id)?.done).length;
 
   return (
@@ -25,6 +26,7 @@ export function GroupSection({ group, tasks, entries, onUpdate }: GroupSectionPr
             task={task}
             entry={entries.find((e) => e.taskId === task.id)}
             onUpdate={(patch) => onUpdate(task.id, patch)}
+            commentPlaceholder={commentPlaceholder}
           />
         ))}
         {tasks.length === 0 && (

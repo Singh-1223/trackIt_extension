@@ -5,9 +5,10 @@ interface TaskCardProps {
   task: Task;
   entry: DayEntry | undefined;
   onUpdate: (patch: { done: boolean; comment: string }) => void;
+  commentPlaceholder?: string;
 }
 
-export function TaskCard({ task, entry, onUpdate }: TaskCardProps) {
+export function TaskCard({ task, entry, onUpdate, commentPlaceholder = "Note for today…" }: TaskCardProps) {
   const [showComment, setShowComment] = useState(false);
   const done = entry?.done ?? false;
   const comment = entry?.comment ?? "";
@@ -42,7 +43,7 @@ export function TaskCard({ task, entry, onUpdate }: TaskCardProps) {
       {showComment && (
         <div className="task-comment-area">
           <textarea
-            placeholder="Note for today…"
+            placeholder={commentPlaceholder}
             value={comment}
             rows={2}
             onChange={(e) => onUpdate({ done, comment: e.target.value })}

@@ -1,4 +1,4 @@
-import type { DayEntry, Note, Task, TaskGroup, Todo, TrackItStore } from "../types/index";
+import type { DayEntry, Habit, HabitEntry, Note, Task, TaskGroup, Todo, TrackItStore } from "../types/index";
 import { pruneOldEntries } from "./utils";
 
 const STORAGE_KEY = "trackit.store";
@@ -21,7 +21,7 @@ function buildDefaultStore(): TrackItStore {
     { id: "task-journal", groupId: "grp-habits", title: "Reflect + journal — 5 min", order: 2 }
   ];
 
-  return { groups, tasks, entries: [], todos: [], notes: [], schemaVersion: SCHEMA_VERSION };
+  return { groups, tasks, entries: [], todos: [], notes: [], habits: [], habitEntries: [], schemaVersion: SCHEMA_VERSION };
 }
 
 function chromeGet(key: string): Promise<Record<string, unknown>> {
@@ -67,6 +67,27 @@ export async function getStore(): Promise<TrackItStore> {
     await chromeSet({ [STORAGE_KEY]: migrated });
     return migrated;
   }
+  // Migrate: add habits/habitEntries arrays if missing
+  if (!Array.isArray(stored.habits) || !Array.isArray(stored.habitEntries)) {
+    const migrated = {
+      ...stored,
+      habits: Array.isArray(stored.habits) ? stored.habits : [],
+      habitEntries: Array.isArray(stored.habitEntries) ? stored.habitEntries : []
+    };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
+  // Migrate: add subTasks array to todos that are missing it
+  if (stored.todos.some((t) => !Array.isArray((t as Todo).subTasks))) {
+    const migrated = {
+      ...stored,
+      todos: stored.todos.map((t) =>
+        Array.isArray((t as Todo).subTasks) ? t : { ...t, subTasks: [] }
+      )
+    };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
 
   return stored;
 }
@@ -103,6 +124,9 @@ export function sortedTodos(todos: Todo[]): { pending: Todo[]; done: Todo[] } {
   const pending = todos
     .filter((t) => !t.done)
     .sort((a, b) => {
+      const pa = a.priority ?? 999;
+      const pb = b.priority ?? 999;
+      if (pa !== pb) return pa - pb;
       if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
       if (a.dueDate) return -1;
       if (b.dueDate) return 1;
@@ -112,4 +136,45 @@ export function sortedTodos(todos: Todo[]): { pending: Todo[]; done: Todo[] } {
     .filter((t) => t.done)
     .sort((a, b) => b.updatedAt - a.updatedAt);
   return { pending, done };
+}
+
+// After marking a todo done, compact the priorities of remaining pending todos
+// so they stay consecutive (e.g. P1, P2, P3 → if P1 done → P2 becomes P1, P3 becomes P2)
+export function repackPriorities(todos: Todo[]): Todo[] {
+  const pending = todos.filter((t) => !t.done);
+  const done = todos.filter((t) => t.done);
+
+  // Sort pending by current priority (unprioritized last)
+  const withPriority = pending.filter((t) => t.priority != null).sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
+  const withoutPriority = pending.filter((t) => t.priority == null);
+
+  // Reassign consecutive priorities starting from 1
+  const repacked = withPriority.map((t, i) => ({ ...t, priority: i + 1 }));
+
+  return [...repacked, ...withoutPriority, ...done];
+}
+
+export function upsertHabitEntry(
+  entries: HabitEntry[],
+  patch: HabitEntry
+): HabitEntry[] {
+  const idx = entries.findIndex((e) => e.habitId === patch.habitId && e.date === patch.date);
+  if (idx === -1) return [...entries, patch];
+  return entries.map((e, i) => (i === idx ? patch : e));
+}
+
+export function getDatesInRange(start: string, end: string): string[] {
+  const dates: string[] = [];
+  const [sy, sm, sd] = start.split("-").map(Number);
+  const [ey, em, ed] = end.split("-").map(Number);
+  const cur = new Date(sy, sm - 1, sd);
+  const last = new Date(ey, em - 1, ed);
+  while (cur <= last) {
+    const y = cur.getFullYear();
+    const m = String(cur.getMonth() + 1).padStart(2, "0");
+    const d = String(cur.getDate()).padStart(2, "0");
+    dates.push(`${y}-${m}-${d}`);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
 }

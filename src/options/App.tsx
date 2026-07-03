@@ -1,5 +1,6 @@
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { HistoryView } from "../components/HistoryView";
+import { HabitView } from "../components/HabitView";
 import { NotesList } from "../components/NotesList";
 import { TaskManager } from "../components/TaskManager";
 import { TodoList } from "../components/TodoList";
@@ -7,7 +8,7 @@ import { getStore, saveStore } from "../lib/store";
 import { getTodayString } from "../lib/utils";
 import type { Note, Todo, TrackItStore } from "../types/index";
 
-type Tab = "history" | "manage" | "todos" | "notes";
+type Tab = "history" | "buildup" | "manage" | "todos" | "notes";
 
 export function App() {
   const [store, setStore] = useState<TrackItStore | null>(null);
@@ -54,6 +55,10 @@ export function App() {
     await handleSave({ ...store, notes: updated });
   }
 
+  async function handleHabitSave(updated: TrackItStore) {
+    await handleSave(updated);
+  }
+
   return (
     <main className="page-shell">
       <section className="hero">
@@ -71,6 +76,13 @@ export function App() {
           onClick={() => setTab("history")}
         >
           History
+        </button>
+        <button
+          type="button"
+          className={`tab-btn${tab === "buildup" ? " active" : ""}`}
+          onClick={() => setTab("buildup")}
+        >
+          Build-Up
         </button>
         <button
           type="button"
@@ -102,6 +114,8 @@ export function App() {
         <p className="muted">Loading…</p>
       ) : tab === "history" ? (
         <HistoryView store={store} />
+      ) : tab === "buildup" ? (
+        <HabitView store={store} onSave={handleHabitSave} />
       ) : tab === "todos" ? (
         <TodoList todos={store.todos} onSave={handleTodoSave} today={today} />
       ) : tab === "notes" ? (

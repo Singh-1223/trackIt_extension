@@ -19,12 +19,23 @@ export interface DayEntry {
   updatedAt: number;
 }
 
+export interface SubTask {
+  id: string;
+  title: string;
+  dueDate: string;
+  done: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Todo {
   id: string;
   title: string;
   description: string;
   dueDate: string;
   done: boolean;
+  priority?: number; // 1 (highest) – 5 (lowest), optional
+  subTasks: SubTask[];
   createdAt: number;
   updatedAt: number;
 }
@@ -37,11 +48,27 @@ export interface Note {
   updatedAt: number;
 }
 
+export interface Habit {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  createdAt: number;
+}
+
+export interface HabitEntry {
+  habitId: string;
+  date: string;
+  done: boolean;
+}
+
 export interface TrackItStore {
   groups: TaskGroup[];
   tasks: Task[];
   entries: DayEntry[];
   todos: Todo[];
   notes: Note[];
+  habits: Habit[];
+  habitEntries: HabitEntry[];
   schemaVersion: number;
 }
