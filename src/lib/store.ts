@@ -6,19 +6,16 @@ const SCHEMA_VERSION = 1;
 
 function buildDefaultStore(): TrackItStore {
   const groups: TaskGroup[] = [
-    { id: "grp-interview", name: "Interview Prep", order: 0 },
-    { id: "grp-habits", name: "Daily Habits", order: 1 }
+    { id: "grp-daily", name: "Daily Goals", order: 0 },
+    { id: "grp-habits", name: "Habits", order: 1 }
   ];
 
   const tasks: Task[] = [
-    { id: "task-dsa", groupId: "grp-interview", title: "DSA: 2 problems — 1 easy + 1 medium", order: 0 },
-    { id: "task-fe", groupId: "grp-interview", title: "Frontend: Machine coding / theory block", order: 1 },
-    { id: "task-be", groupId: "grp-interview", title: "Backend: Java/Spring — theory + build", order: 2 },
-    { id: "task-sd", groupId: "grp-interview", title: "System Design: 1 HLD or LLD timed session", order: 3 },
-    { id: "task-ai", groupId: "grp-interview", title: "AI: Read + hands-on portfolio", order: 4 },
-    { id: "task-workout", groupId: "grp-habits", title: "Morning workout / walk", order: 0 },
-    { id: "task-read", groupId: "grp-habits", title: "Read 20 pages", order: 1 },
-    { id: "task-journal", groupId: "grp-habits", title: "Reflect + journal — 5 min", order: 2 }
+    { id: "task-1", groupId: "grp-daily", title: "Deep work block — 2 hrs", order: 0 },
+    { id: "task-2", groupId: "grp-daily", title: "Review priorities for tomorrow", order: 1 },
+    { id: "task-3", groupId: "grp-habits", title: "Morning workout / walk", order: 0 },
+    { id: "task-4", groupId: "grp-habits", title: "Read 20 pages", order: 1 },
+    { id: "task-5", groupId: "grp-habits", title: "Reflect + journal — 5 min", order: 2 }
   ];
 
   return { groups, tasks, entries: [], todos: [], notes: [], habits: [], habitEntries: [], schemaVersion: SCHEMA_VERSION };
