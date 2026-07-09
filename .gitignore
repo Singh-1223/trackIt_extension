@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+.next/
 
 # OS
 .DS_Store
@@ -14,6 +15,13 @@ Thumbs.db
 *.swp
 *.swo
 
-# Env
+# Env (contains secrets — never commit)
 .env
 .env.local
+.env*.local
+
+# Root-level extension copies (for loading from old path)
+/manifest.json
+
+# Kiro
+.kiro
