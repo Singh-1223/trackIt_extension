@@ -350,6 +350,16 @@ curl -I https://track-it-extension-api.vercel.app/api/store
 
 ## How to Implement a New Feature
 
+> **Extension ↔ App parity rule — always applies.**
+> Every feature, bug fix, UI change, or behaviour tweak done in the extension **must be mirrored in the mobile app**, and vice versa. The two share the same data model, the same API, and the same user — they must stay in sync. Before closing any task, check both sides:
+> - New component in extension → equivalent component in `apps/mobile/components/`
+> - Logic change in `apps/extension/src/lib/store.ts` → same change in `apps/mobile/lib/store.ts`
+> - Sync/debounce behaviour change → update both `apps/extension/src/lib/sync/syncEngine.ts` and `apps/mobile/hooks/useStore.ts`
+> - UI tweak (layout, colours, interactions) → apply to both extension CSS and mobile RN StyleSheet
+> - Type change → update all three: extension types, API types, mobile types (see Step 1 below)
+>
+> If a platform genuinely can't support a feature (e.g. Chrome-only APIs), document the gap explicitly rather than silently skipping it.
+
 Every feature typically touches all three layers. Follow these steps in order.
 
 ---
