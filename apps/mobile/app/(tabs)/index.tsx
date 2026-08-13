@@ -5,7 +5,7 @@ import { GroupSection } from "../../components/GroupSection";
 import { HabitView } from "../../components/HabitView";
 import { SyncStatusIndicator } from "../../components/SyncStatusIndicator";
 import { TodoList } from "../../components/TodoList";
-import { useStore } from "../../hooks/useStore";
+import { useStoreContext } from "../../hooks/StoreContext";
 import { upsertEntry } from "../../lib/store";
 import { formatDateLabel, getLastNDays, getTodayString } from "../../lib/utils";
 import { colors, fontSize, radius, shadow, spacing } from "../../theme";
@@ -14,7 +14,7 @@ import type { TrackItStore } from "../../types/index";
 const TODAY = getTodayString();
 
 export default function TodayScreen() {
-  const { store, loading, error, syncStatus, save } = useStore();
+  const { store, loading, error, syncStatus, save } = useStoreContext();
   const { signOut } = useAuth();
 
   if (loading || !store) {

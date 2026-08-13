@@ -1,11 +1,11 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { TodoList } from "../../components/TodoList";
-import { useStore } from "../../hooks/useStore";
+import { useStoreContext } from "../../hooks/StoreContext";
 import { getTodayString } from "../../lib/utils";
 import { colors, fontSize, radius, shadow, spacing } from "../../theme";
 
 export default function TodosScreen() {
-  const { store, loading, save } = useStore();
+  const { store, loading, save } = useStoreContext();
   const today = getTodayString();
 
   if (loading || !store) {

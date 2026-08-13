@@ -28,7 +28,7 @@ export interface SyncEngine {
 }
 
 /** Default debounce window in milliseconds. */
-const DEBOUNCE_MS = 3000;
+const DEBOUNCE_MS = 5000;
 
 /**
  * Creates a new SyncEngine instance.

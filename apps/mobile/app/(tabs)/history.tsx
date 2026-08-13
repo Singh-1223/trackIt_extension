@@ -1,10 +1,10 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { HistoryView } from "../../components/HistoryView";
-import { useStore } from "../../hooks/useStore";
+import { useStoreContext } from "../../hooks/StoreContext";
 import { colors, fontSize, radius, shadow, spacing } from "../../theme";
 
 export default function HistoryScreen() {
-  const { store, loading } = useStore();
+  const { store, loading } = useStoreContext();
 
   if (loading || !store) {
     return (

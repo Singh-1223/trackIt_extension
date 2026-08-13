@@ -1,10 +1,10 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { NotesList } from "../../components/NotesList";
-import { useStore } from "../../hooks/useStore";
+import { useStoreContext } from "../../hooks/StoreContext";
 import { colors, fontSize, radius, shadow, spacing } from "../../theme";
 
 export default function NotesScreen() {
-  const { store, loading, save } = useStore();
+  const { store, loading, save } = useStoreContext();
 
   if (loading || !store) {
     return (
