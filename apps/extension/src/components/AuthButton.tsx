@@ -113,6 +113,7 @@ export function AuthButton() {
           <SignIn
             routing="hash"
             signUpUrl="#/sign-up"
+            afterSignInUrl={window.location.href}
             appearance={{
               elements: {
                 rootBox: { width: "100%" },
