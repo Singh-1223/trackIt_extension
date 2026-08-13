@@ -6,6 +6,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "http://localhost:3000/*",
+    "https://track-it-extension-api.vercel.app/*",
     "https://*.clerk.accounts.dev/*",
     "https://accounts.clerk.dev/*"
   ],
@@ -15,7 +16,7 @@
     "default_popup": "dist/popup.html"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:3000 https://*.clerk.accounts.dev https://accounts.clerk.dev https://clerk-telemetry.com"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:3000 https://track-it-extension-api.vercel.app https://*.clerk.accounts.dev https://accounts.clerk.dev https://clerk-telemetry.com"
   },
   "minimum_chrome_version": "114"
 }
