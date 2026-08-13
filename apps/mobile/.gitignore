@@ -8,6 +8,7 @@ dist/
 *.key
 *.mobileprovision
 *.orig.*
+bugreport-*.zip
 web-build/
 android/
 ios/
