@@ -360,7 +360,7 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
               )}
             </View>
             {!compact && todo.description ? (
-              <Text style={s.desc}>{todo.description}</Text>
+              <Text selectable style={s.desc}>{todo.description}</Text>
             ) : null}
             <Text style={s.createdAt}>Added {formatCreatedAt(todo.createdAt)}</Text>
             {renderSubTasks(todo, isDone || compact)}
@@ -473,7 +473,7 @@ const s = StyleSheet.create({
   dueBadge: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
   dueBadgeDefault: { backgroundColor: colors.border },
   dueBadgeText: { fontSize: fontSize.xs, color: colors.inkSoft, fontWeight: "600" },
-  desc: { fontSize: fontSize.sm, color: colors.inkSoft, marginTop: spacing.xs, paddingLeft: 28, lineHeight: 20 },
+  desc: { fontSize: fontSize.base, color: colors.inkSoft, marginTop: spacing.xs, paddingLeft: 28, lineHeight: 22 },
   createdAt: { fontSize: fontSize.xs, color: colors.inkSoft, marginTop: 2, paddingLeft: 28 },
   editBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: 9, paddingVertical: 4 },
   editBtnText: { fontSize: fontSize.xs, color: colors.ink, fontWeight: "600" },

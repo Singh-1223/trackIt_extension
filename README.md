@@ -40,9 +40,9 @@ trackIt/                         ← monorepo root
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Extension** uses `chrome.storage.local` as its primary store. A `SyncEngine` debounces writes (3s window) and pushes to the API. An `OfflineQueue` retries failed pushes on reconnect. Auth is handled by `@clerk/chrome-extension`.
+**Extension** uses `chrome.storage.local` as its primary store. A `SyncEngine` debounces writes (3s window) and pushes to the API. An `OfflineQueue` retries failed pushes on reconnect. Auth is handled by `@clerk/chrome-extension`. The popup uses a "Daily Grind" parent accordion that wraps all task group accordions, keeping the main view compact.
 
-**Mobile app** loads from `AsyncStorage` instantly on open, then fetches from the API in the background. API wins the merge if it has more content or a newer `updatedAt`. Every mutation writes to `AsyncStorage` immediately and pushes to the API after a 5s debounce window (rapid changes like typing a comment collapse into one call).
+**Mobile app** loads from `AsyncStorage` instantly on open, then fetches from the API in the background. API wins the merge if it has more content or a newer `updatedAt`. Every mutation writes to `AsyncStorage` immediately and pushes to the API after a 5s debounce window (rapid changes like typing a comment collapse into one call). Task groups are also wrapped in a "Daily Grind" parent accordion with each group collapsed by default.
 
 **API** is the single source of truth for cloud data. It upserts the full `TrackItStore` document keyed by `userId` (from Clerk).
 
@@ -80,12 +80,13 @@ trackIt/                         ← monorepo root
 apps/extension/
 ├── src/
 │   ├── components/
-│   │   ├── GroupSection.tsx          task group accordion
+│   │   ├── GroupSection.tsx          task group accordion (collapsed by default)
 │   │   ├── TaskCard.tsx              checkbox + per-day comment
 │   │   ├── TodoList.tsx              todos with subtasks, priorities, due dates
 │   │   ├── HabitView.tsx             Build-Up streak grid
 │   │   ├── HistoryView.tsx           history analytics (7/30/all days)
 │   │   ├── NotesList.tsx             notes CRUD
+│   │   ├── LibraryView.tsx           reading list (books with status + notes)
 │   │   ├── TaskManager.tsx           manage groups and tasks
 │   │   ├── AuthButton.tsx            Clerk sign-in/out UI in popup
 │   │   └── SyncStatusIndicator.tsx   shows idle/pushing/error sync status
@@ -109,11 +110,11 @@ apps/extension/
 │   │
 │   ├── popup/
 │   │   ├── main.tsx                  popup entry point
-│   │   └── App.tsx                   today view + accordions (todos/notes/habits/past-7)
+│   │   └── App.tsx                   today view — "Daily Grind" accordion wraps task groups, plus accordions for todos/notes/habits/library/past-7
 │   │
 │   ├── options/
 │   │   ├── main.tsx                  options page entry point
-│   │   └── App.tsx                   tabs: History, Build-Up, To-Dos, Notes, Manage
+│   │   └── App.tsx                   tabs: History, Build-Up, To-Dos, Notes, Library, Manage
 │   │
 │   ├── styles/
 │   │   └── app.css                   full design system (CSS variables + all components)
@@ -178,21 +179,23 @@ apps/mobile/
 │   │   ├── sign-in.tsx               email/password + forgot password OTP reset flow
 │   │   └── sign-up.tsx               sign up + email verification code
 │   └── (tabs)/
-│       ├── _layout.tsx               bottom tab bar (6 tabs)
-│       ├── index.tsx                 Today — task groups + compact accordions
+│       ├── _layout.tsx               bottom tab bar (7 tabs)
+│       ├── index.tsx                 Today — "Daily Grind" accordion wraps task groups (collapsed by default), plus accordions for todos/notes/habits/library/past-7
 │       ├── todos.tsx                 To-Dos full view
 │       ├── habits.tsx                Build-Up habit streaks
 │       ├── notes.tsx                 Notes CRUD
+│       ├── library.tsx               Library — reading list (books with status + notes)
 │       ├── history.tsx               History analytics
 │       └── manage.tsx                Manage task groups and tasks
 │
-├── components/                       All 7 components — same logic as extension, RN StyleSheet
-│   ├── GroupSection.tsx
+├── components/                       All 8 components — same logic as extension, RN StyleSheet
+│   ├── GroupSection.tsx              task group accordion (collapsed by default)
 │   ├── TaskCard.tsx
 │   ├── TodoList.tsx
 │   ├── HabitView.tsx
 │   ├── HistoryView.tsx
 │   ├── NotesList.tsx
+│   ├── LibraryView.tsx              reading list (books with status + notes)
 │   └── TaskManager.tsx
 │
 ├── hooks/
@@ -229,8 +232,9 @@ TrackItStore {
   entries:       DayEntry[]     // daily checkbox + comment per task (pruned to 90 days)
   todos:         Todo[]         // todos with priority (P1–P5), due date, subtasks
   notes:         Note[]         // freeform heading + description notes
-  habits:        Habit[]        // habit definitions with start/end date range
+  habits:        Habit[]        // habit definitions with optional targetCount
   habitEntries:  HabitEntry[]   // daily habit completion records
+  books:         Book[]         // reading list with status (reading/toread/completed) + notes
   schemaVersion: number         // for migrations
   updatedAt:     number         // unix ms — used for cloud merge (last-write-wins)
 }

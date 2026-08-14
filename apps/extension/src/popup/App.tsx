@@ -1,6 +1,7 @@
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { GroupSection } from "../components/GroupSection";
 import { HabitView } from "../components/HabitView";
+import { LibraryView } from "../components/LibraryView";
 import { TodoList } from "../components/TodoList";
 import { AuthButton } from "../components/AuthButton";
 import { SyncStatusIndicator } from "../components/SyncStatusIndicator";
@@ -134,6 +135,17 @@ function AppContent() {
     });
   }
 
+  function handleLibrarySave(updated: TrackItStore) {
+    setStore(updated);
+    saveRef.current = saveRef.current.then(async () => {
+      try {
+        await saveStore(updated);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Save failed.");
+      }
+    });
+  }
+
   return (
     <main className="popup-shell">
       <section className="popup-hero">
@@ -159,20 +171,31 @@ function AppContent() {
         ) : sortedGroups.length === 0 ? (
           <div className="empty">No task groups yet. Open settings to create some.</div>
         ) : (
-          sortedGroups.map((group) => {
-            const groupTasks = store.tasks
-              .filter((t) => t.groupId === group.id)
-              .sort((a, b) => a.order - b.order);
-            return (
-              <GroupSection
-                key={group.id}
-                group={group}
-                tasks={groupTasks}
-                entries={todayEntries}
-                onUpdate={(taskId, patch) => handleUpdate(TODAY, taskId, patch)}
-              />
-            );
-          })
+          <details className="group-accordion">
+            <summary className="group-accordion-summary">
+              <span className="group-accordion-chevron" aria-hidden="true" />
+              <span className="group-accordion-name">Daily Grind</span>
+              <span className="group-progress-badge">
+                {todayEntries.filter((e) => e.done).length} / {store.tasks.length}
+              </span>
+            </summary>
+            <div className="group-task-list" style={{ paddingTop: 4 }}>
+              {sortedGroups.map((group) => {
+                const groupTasks = store.tasks
+                  .filter((t) => t.groupId === group.id)
+                  .sort((a, b) => a.order - b.order);
+                return (
+                  <GroupSection
+                    key={group.id}
+                    group={group}
+                    tasks={groupTasks}
+                    entries={todayEntries}
+                    onUpdate={(taskId, patch) => handleUpdate(TODAY, taskId, patch)}
+                  />
+                );
+              })}
+            </div>
+          </details>
         )}
       </div>
 
@@ -256,6 +279,24 @@ function AppContent() {
           </summary>
           <div style={{ padding: "8px 12px 12px" }}>
             <HabitView store={store} onSave={handleHabitSave} compact={true} />
+          </div>
+        </details>
+      )}
+
+      {/* Library accordion */}
+      {store !== null && (
+        <details className="group-accordion" style={{ marginTop: 8 }}>
+          <summary className="group-accordion-summary">
+            <span className="group-accordion-chevron" aria-hidden="true" />
+            <span className="group-accordion-name">Library</span>
+            {(store.books ?? []).filter((b) => b.status === "reading").length > 0 && (
+              <span className="group-progress-badge">
+                {(store.books ?? []).filter((b) => b.status === "reading").length} reading
+              </span>
+            )}
+          </summary>
+          <div style={{ padding: "8px 12px 12px" }}>
+            <LibraryView store={store} onSave={handleLibrarySave} compact={true} />
           </div>
         </details>
       )}

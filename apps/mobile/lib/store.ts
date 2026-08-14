@@ -23,6 +23,7 @@ export function buildDefaultStore(): TrackItStore {
     notes: [],
     habits: [],
     habitEntries: [],
+    books: [],
     schemaVersion: SCHEMA_VERSION,
     updatedAt: 0,
   };
@@ -34,6 +35,7 @@ function migrate(raw: TrackItStore): TrackItStore {
   if (!Array.isArray(s.notes)) s = { ...s, notes: [] };
   if (!Array.isArray(s.habits)) s = { ...s, habits: [] };
   if (!Array.isArray(s.habitEntries)) s = { ...s, habitEntries: [] };
+  if (!Array.isArray(s.books)) s = { ...s, books: [] };
   if (s.todos.some((t) => !Array.isArray((t as Todo).subTasks))) {
     s = { ...s, todos: s.todos.map((t) => (Array.isArray((t as Todo).subTasks) ? t : { ...t, subTasks: [] })) };
   }

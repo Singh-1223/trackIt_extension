@@ -1,6 +1,7 @@
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { HistoryView } from "../components/HistoryView";
 import { HabitView } from "../components/HabitView";
+import { LibraryView } from "../components/LibraryView";
 import { NotesList } from "../components/NotesList";
 import { TaskManager } from "../components/TaskManager";
 import { TodoList } from "../components/TodoList";
@@ -14,7 +15,7 @@ import { getTodayString } from "../lib/utils";
 import type { SyncStatus } from "../lib/sync/syncEngine";
 import type { Note, Todo, TrackItStore } from "../types/index";
 
-type Tab = "history" | "buildup" | "manage" | "todos" | "notes";
+type Tab = "history" | "buildup" | "library" | "manage" | "todos" | "notes";
 
 /**
  * Top-level App wraps the content in AuthProvider so auth context
@@ -113,6 +114,10 @@ function AppContent() {
     await handleSave(updated);
   }
 
+  async function handleLibrarySave(updated: TrackItStore) {
+    await handleSave(updated);
+  }
+
   return (
     <main className="page-shell">
       <section className="hero">
@@ -146,6 +151,13 @@ function AppContent() {
         </button>
         <button
           type="button"
+          className={`tab-btn${tab === "library" ? " active" : ""}`}
+          onClick={() => setTab("library")}
+        >
+          Library
+        </button>
+        <button
+          type="button"
           className={`tab-btn${tab === "todos" ? " active" : ""}`}
           onClick={() => setTab("todos")}
         >
@@ -176,6 +188,8 @@ function AppContent() {
         <HistoryView store={store} />
       ) : tab === "buildup" ? (
         <HabitView store={store} onSave={handleHabitSave} />
+      ) : tab === "library" ? (
+        <LibraryView store={store} onSave={handleLibrarySave} />
       ) : tab === "todos" ? (
         <TodoList todos={store.todos} onSave={handleTodoSave} today={today} />
       ) : tab === "notes" ? (

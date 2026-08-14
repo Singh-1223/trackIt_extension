@@ -178,6 +178,16 @@ export function TaskManager({ store, onSave }: TaskManagerProps) {
                   </View>
                 ) : (
                   <>
+                    <Text style={s.taskTitle}>{task.title}</Text>
+                    <TouchableOpacity
+                      style={s.secondaryBtn}
+                      onPress={() => { setEditingTaskId(task.id); setEditingTitle(task.title); }}
+                    >
+                      <Text style={s.secondaryBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={s.dangerBtn} onPress={() => handleDeleteTask(task.id)}>
+                      <Text style={s.dangerBtnText}>Del</Text>
+                    </TouchableOpacity>
                     <View style={s.orderBtns}>
                       <TouchableOpacity
                         style={[s.orderBtn, idx === 0 && s.orderBtnDisabled]}
@@ -194,16 +204,6 @@ export function TaskManager({ store, onSave }: TaskManagerProps) {
                         <Text style={s.orderBtnText}>▼</Text>
                       </TouchableOpacity>
                     </View>
-                    <Text style={s.taskTitle}>{task.title}</Text>
-                    <TouchableOpacity
-                      style={s.secondaryBtn}
-                      onPress={() => { setEditingTaskId(task.id); setEditingTitle(task.title); }}
-                    >
-                      <Text style={s.secondaryBtnText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={s.dangerBtn} onPress={() => handleDeleteTask(task.id)}>
-                      <Text style={s.dangerBtnText}>Del</Text>
-                    </TouchableOpacity>
                   </>
                 )}
               </View>

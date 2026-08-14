@@ -66,24 +66,29 @@ export default function TodayScreen() {
 
       {error ? <Text style={s.errorText}>{error}</Text> : null}
 
-      {/* Task groups */}
+      {/* Daily Grind — wraps all task group accordions */}
       {sortedGroups.length === 0 ? (
         <Text style={s.empty}>No task groups yet. Go to Manage to create some.</Text>
       ) : (
-        sortedGroups.map((group) => {
-          const groupTasks = store.tasks
-            .filter((t) => t.groupId === group.id)
-            .sort((a, b) => a.order - b.order);
-          return (
-            <GroupSection
-              key={group.id}
-              group={group}
-              tasks={groupTasks}
-              entries={todayEntries}
-              onUpdate={(taskId, patch) => handleUpdate(TODAY, taskId, patch)}
-            />
-          );
-        })
+        <Accordion
+          label="Daily Grind"
+          badge={`${todayEntries.filter((e) => e.done).length} / ${store.tasks.length}`}
+        >
+          {sortedGroups.map((group) => {
+            const groupTasks = store.tasks
+              .filter((t) => t.groupId === group.id)
+              .sort((a, b) => a.order - b.order);
+            return (
+              <GroupSection
+                key={group.id}
+                group={group}
+                tasks={groupTasks}
+                entries={todayEntries}
+                onUpdate={(taskId, patch) => handleUpdate(TODAY, taskId, patch)}
+              />
+            );
+          })}
+        </Accordion>
       )}
 
       {/* To-Dos compact accordion */}
@@ -106,15 +111,20 @@ export default function TodayScreen() {
         {recentNotes.length === 0 ? (
           <Text style={s.muted}>No notes yet.</Text>
         ) : (
-          recentNotes.map((note) => (
-            <View key={note.id} style={s.noteRow}>
-              <Text style={s.noteHeading}>{note.heading}</Text>
-              {note.description ? <Text style={s.noteDesc} numberOfLines={2}>{note.description}</Text> : null}
-            </View>
-          ))
-        )}
-        {store.notes.length > 5 && (
-          <Text style={s.muted}>+{store.notes.length - 5} more — open Notes tab to see all</Text>
+          <>
+            {recentNotes.map((note) => (
+              <Accordion key={note.id} label={note.heading} nested>
+                {note.description ? (
+                  <Text selectable style={s.noteDescExpanded}>{note.description}</Text>
+                ) : (
+                  <Text style={s.muted}>No description.</Text>
+                )}
+              </Accordion>
+            ))}
+            {store.notes.length > 5 && (
+              <Text style={s.muted}>+{store.notes.length - 5} more — open Notes tab to see all</Text>
+            )}
+          </>
         )}
       </Accordion>
 
@@ -124,6 +134,22 @@ export default function TodayScreen() {
         badge={store.habits.length > 0 ? `${store.habits.length} habit${store.habits.length === 1 ? "" : "s"}` : undefined}
       >
         <HabitView store={store} onSave={handleHabitSave} compact />
+      </Accordion>
+
+      {/* Library compact accordion */}
+      <Accordion
+        label="Library"
+        badge={(store.books ?? []).filter((b) => b.status === "reading").length > 0
+          ? `${(store.books ?? []).filter((b) => b.status === "reading").length} reading`
+          : undefined}
+      >
+        {(store.books ?? []).filter((b) => b.status === "reading").length === 0 ? (
+          <Text style={s.muted}>No books currently reading.</Text>
+        ) : (
+          (store.books ?? []).filter((b) => b.status === "reading").map((book) => (
+            <BookAccordion key={book.id} book={book} />
+          ))
+        )}
       </Accordion>
 
       {/* Past 7 days accordion */}
@@ -195,6 +221,35 @@ function Accordion({
   );
 }
 
+function BookAccordion({ book }: { book: TrackItStore["books"][number] }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View style={[accordionS.container, accordionS.nested]}>
+      <TouchableOpacity style={accordionS.header} onPress={() => setOpen((v) => !v)}>
+        <Text style={accordionS.chevron}>{open ? "▾" : "▸"}</Text>
+        <View style={s.bookLabelRow}>
+          <Text style={s.bookTitle}>{book.title}</Text>
+          {book.author ? <Text style={s.bookAuthor}> — {book.author}</Text> : null}
+        </View>
+      </TouchableOpacity>
+      {open && (
+        <View style={accordionS.body}>
+          {book.notes.length === 0 ? (
+            <Text style={s.muted}>No notes yet.</Text>
+          ) : (
+            book.notes.map((note) => (
+              <View key={note.id} style={s.bookNoteRow}>
+                <Text selectable style={s.noteDescExpanded}>{note.text}</Text>
+              </View>
+            ))
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.md },
@@ -228,6 +283,11 @@ const s = StyleSheet.create({
   noteRow: { paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
   noteHeading: { fontSize: fontSize.sm, fontWeight: "600", color: colors.ink },
   noteDesc: { fontSize: fontSize.xs, color: colors.inkSoft, marginTop: 2, lineHeight: 18 },
+  noteDescExpanded: { fontSize: 16, color: colors.ink, lineHeight: 26, paddingVertical: spacing.xs },
+  bookNoteRow: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.xs },
+  bookLabelRow: { flex: 1, flexDirection: "row", alignItems: "baseline", flexWrap: "wrap" },
+  bookTitle: { fontSize: fontSize.sm, fontWeight: "700", color: colors.ink },
+  bookAuthor: { fontSize: fontSize.xs, fontStyle: "italic", color: colors.inkSoft },
 });
 
 const accordionS = StyleSheet.create({

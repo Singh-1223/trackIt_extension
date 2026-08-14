@@ -142,7 +142,7 @@ export function NotesList({ notes, onSave }: NotesListProps) {
                 ) : (
                   <View>
                     {note.description ? (
-                      <Text style={s.noteDesc}>{note.description}</Text>
+                      <Text selectable style={s.noteDesc}>{note.description}</Text>
                     ) : (
                       <Text style={s.empty}>No description.</Text>
                     )}
@@ -209,7 +209,7 @@ const s = StyleSheet.create({
   noteHeading: { flex: 1, fontSize: fontSize.base, fontWeight: "600", color: colors.ink },
   noteDate: { fontSize: fontSize.xs, color: colors.inkSoft, flexShrink: 0 },
   noteBody: { padding: spacing.sm, paddingTop: 0, borderTopWidth: 1, borderTopColor: colors.border },
-  noteDesc: { fontSize: fontSize.sm, color: colors.ink, lineHeight: 20, paddingVertical: spacing.xs },
+  noteDesc: { fontSize: fontSize.base, color: colors.ink, lineHeight: 22, paddingVertical: spacing.xs },
   actionRow: { flexDirection: "row", gap: spacing.xs, marginTop: spacing.xs },
   editBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: spacing.sm, paddingVertical: 5 },
   editBtnText: { fontSize: fontSize.xs, color: colors.ink, fontWeight: "600" },

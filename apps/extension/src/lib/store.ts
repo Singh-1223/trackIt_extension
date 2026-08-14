@@ -20,7 +20,7 @@ function buildDefaultStore(): TrackItStore {
     { id: "task-5", groupId: "grp-habits", title: "Reflect + journal — 5 min", order: 2 }
   ];
 
-  return { groups, tasks, entries: [], todos: [], notes: [], habits: [], habitEntries: [], schemaVersion: SCHEMA_VERSION, updatedAt: Date.now() };
+  return { groups, tasks, entries: [], todos: [], notes: [], habits: [], habitEntries: [], books: [], schemaVersion: SCHEMA_VERSION, updatedAt: Date.now() };
 }
 
 function chromeGet(key: string): Promise<Record<string, unknown>> {
@@ -84,6 +84,13 @@ export async function getStore(): Promise<TrackItStore> {
         Array.isArray((t as Todo).subTasks) ? t : { ...t, subTasks: [] }
       )
     };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
+
+  // Migrate: add books array if missing
+  if (!Array.isArray(stored.books)) {
+    const migrated = { ...stored, books: [] };
     await chromeSet({ [STORAGE_KEY]: migrated });
     return migrated;
   }

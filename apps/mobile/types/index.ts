@@ -51,8 +51,9 @@ export interface Note {
 export interface Habit {
   id: string;
   name: string;
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
+  targetCount?: number;
   createdAt: number;
 }
 
@@ -60,6 +61,25 @@ export interface HabitEntry {
   habitId: string;
   date: string;
   done: boolean;
+}
+
+export interface BookNote {
+  id: string;
+  text: string;
+  createdAt: number;
+}
+
+export type BookStatus = "reading" | "toread" | "completed";
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  status: BookStatus;
+  notes: BookNote[];
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface TrackItStore {
@@ -70,6 +90,7 @@ export interface TrackItStore {
   notes: Note[];
   habits: Habit[];
   habitEntries: HabitEntry[];
+  books: Book[];
   schemaVersion: number;
   updatedAt: number;
 }

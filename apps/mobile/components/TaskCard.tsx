@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.sm,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.base,
     color: colors.ink,
     minHeight: 56,
     textAlignVertical: "top",

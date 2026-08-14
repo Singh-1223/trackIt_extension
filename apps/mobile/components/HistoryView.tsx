@@ -90,9 +90,9 @@ export function HistoryView({ store }: HistoryViewProps) {
                             {entry?.done ? "✓" : "○"}
                           </Text>
                           <View style={{ flex: 1 }}>
-                            <Text style={s.detailTask}>{task.title}</Text>
+                            <Text selectable style={s.detailTask}>{task.title}</Text>
                             {entry?.comment ? (
-                              <Text style={s.detailComment}>{entry.comment}</Text>
+                              <Text selectable style={s.detailComment}>{entry.comment}</Text>
                             ) : null}
                           </View>
                         </View>
@@ -149,6 +149,6 @@ const s = StyleSheet.create({
   detailRow: { flexDirection: "row", gap: spacing.sm, alignItems: "flex-start", paddingVertical: 3 },
   detailDone: { fontSize: fontSize.sm, color: colors.success, fontWeight: "700", width: 16 },
   detailMiss: { fontSize: fontSize.sm, color: colors.inkSoft, width: 16 },
-  detailTask: { fontSize: fontSize.sm, color: colors.ink },
-  detailComment: { fontSize: fontSize.xs, color: colors.inkSoft, marginTop: 2, fontStyle: "italic" },
+  detailTask: { fontSize: fontSize.base, color: colors.ink },
+  detailComment: { fontSize: fontSize.sm, color: colors.inkSoft, marginTop: 2, fontStyle: "italic", lineHeight: 19 },
 });

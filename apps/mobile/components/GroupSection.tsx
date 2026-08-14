@@ -13,7 +13,7 @@ interface GroupSectionProps {
 }
 
 export function GroupSection({ group, tasks, entries, onUpdate, commentPlaceholder }: GroupSectionProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const doneCount = tasks.filter((t) => entries.find((e) => e.taskId === t.id)?.done).length;
 
   return (
