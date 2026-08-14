@@ -19,9 +19,7 @@ export default function TabsLayout() {
     <StoreContext.Provider value={storeValue}>
       <Tabs
         screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: colors.ink,
-          headerShadowVisible: false,
+          headerShown: false,
           tabBarStyle: {
             backgroundColor: colors.surfaceStrong,
             borderTopColor: colors.border,
@@ -85,8 +83,8 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="manage"
           options={{
-            title: "Manage",
-            tabBarLabel: "Manage",
+            title: "Tasks",
+            tabBarLabel: "Daily Grind",
             tabBarIcon: tabIcon("settings-outline", "settings"),
           }}
         />

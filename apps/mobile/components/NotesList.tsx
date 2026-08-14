@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,7 @@ import type { Note } from "../types/index";
 interface NotesListProps {
   notes: Note[];
   onSave: (updated: Note[]) => void;
+  hideAddForm?: boolean;
 }
 
 function formatDate(ms: number): string {
@@ -24,7 +26,7 @@ function formatDate(ms: number): string {
   }).format(new Date(ms));
 }
 
-export function NotesList({ notes, onSave }: NotesListProps) {
+export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps) {
   const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
 
   const [addHeading, setAddHeading] = useState("");
@@ -111,80 +113,71 @@ export function NotesList({ notes, onSave }: NotesListProps) {
 
             {isExpanded && (
               <View style={s.noteBody}>
-                {isEditing ? (
-                  <View>
-                    <TextInput
-                      style={s.input}
-                      value={editHeading}
-                      onChangeText={setEditHeading}
-                      placeholder="Heading"
-                      placeholderTextColor={colors.inkSoft}
-                      autoFocus
-                    />
-                    <TextInput
-                      style={[s.input, s.textarea]}
-                      value={editDesc}
-                      onChangeText={setEditDesc}
-                      placeholder="Description (optional)"
-                      placeholderTextColor={colors.inkSoft}
-                      multiline
-                      numberOfLines={4}
-                    />
-                    <View style={s.actionRow}>
-                      <TouchableOpacity style={s.saveBtn} onPress={handleSaveEdit}>
-                        <Text style={s.saveBtnText}>Save</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={s.cancelBtn} onPress={cancelEdit}>
-                        <Text style={s.cancelBtnText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
+                <View>
+                  {note.description ? (
+                    <Text selectable style={s.noteDesc}>{note.description}</Text>
+                  ) : (
+                    <Text style={s.empty}>No description.</Text>
+                  )}
+                  <View style={s.actionRow}>
+                    <TouchableOpacity style={s.editBtn} onPress={() => startEdit(note)}>
+                      <Text style={s.editBtnText}>✎</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={s.delBtn} onPress={() => handleDelete(note.id)}>
+                      <Text style={s.delBtnText}>🗑</Text>
+                    </TouchableOpacity>
                   </View>
-                ) : (
-                  <View>
-                    {note.description ? (
-                      <Text selectable style={s.noteDesc}>{note.description}</Text>
-                    ) : (
-                      <Text style={s.empty}>No description.</Text>
-                    )}
-                    <View style={s.actionRow}>
-                      <TouchableOpacity style={s.editBtn} onPress={() => startEdit(note)}>
-                        <Text style={s.editBtnText}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={s.delBtn} onPress={() => handleDelete(note.id)}>
-                        <Text style={s.delBtnText}>Delete</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
+                </View>
               </View>
             )}
           </View>
         );
       })}
 
-      <View style={s.addForm}>
-        <TextInput
-          style={s.input}
-          placeholder="Note heading…"
-          placeholderTextColor={colors.inkSoft}
-          value={addHeading}
-          onChangeText={setAddHeading}
-          onSubmitEditing={handleAdd}
-          returnKeyType="done"
-        />
-        <TextInput
-          style={[s.input, s.textarea]}
-          placeholder="Description (optional)"
-          placeholderTextColor={colors.inkSoft}
-          value={addDesc}
-          onChangeText={setAddDesc}
-          multiline
-          numberOfLines={3}
-        />
-        <TouchableOpacity style={s.primaryBtn} onPress={handleAdd}>
-          <Text style={s.primaryBtnText}>Add Note</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Edit Note Modal */}
+      <Modal visible={editId !== null} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Edit Note</Text>
+              <TouchableOpacity onPress={cancelEdit}>
+                <Text style={s.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput style={s.input} value={editHeading} onChangeText={setEditHeading} placeholder="Heading" placeholderTextColor={colors.inkSoft} autoFocus />
+            <TextInput style={[s.input, s.textarea]} value={editDesc} onChangeText={setEditDesc} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} multiline numberOfLines={4} />
+            <TouchableOpacity style={s.primaryBtn} onPress={handleSaveEdit}>
+              <Text style={s.primaryBtnText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {!hideAddForm && (
+        <View style={s.addForm}>
+          <TextInput
+            style={s.input}
+            placeholder="Note heading…"
+            placeholderTextColor={colors.inkSoft}
+            value={addHeading}
+            onChangeText={setAddHeading}
+            onSubmitEditing={handleAdd}
+            returnKeyType="done"
+          />
+          <TextInput
+            style={[s.input, s.textarea]}
+            placeholder="Description (optional)"
+            placeholderTextColor={colors.inkSoft}
+            value={addDesc}
+            onChangeText={setAddDesc}
+            multiline
+            numberOfLines={3}
+          />
+          <TouchableOpacity style={s.primaryBtn} onPress={handleAdd}>
+            <Text style={s.primaryBtnText}>Add Note</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -238,4 +231,10 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   primaryBtnText: { color: colors.white, fontWeight: "700", fontSize: fontSize.base },
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: spacing.lg },
+  modalContent: { backgroundColor: colors.surfaceStrong, borderRadius: radius.lg, padding: spacing.lg },
+  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: "800", color: colors.ink },
+  modalClose: { fontSize: 20, color: colors.inkSoft, padding: spacing.xs },
 });

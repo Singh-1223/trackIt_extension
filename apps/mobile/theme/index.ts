@@ -57,3 +57,8 @@ export const priorityColors: Record<number, { bg: string; text: string }> = {
   4: { bg: "#f0fdf4", text: "#166534" },
   5: { bg: "rgba(74,46,33,0.08)", text: "#5f4d43" },
 };
+
+import { Platform, StatusBar } from "react-native";
+
+/** Safe top padding that clears the status bar on both platforms */
+export const TOP_PADDING = Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) + 12 : 52;

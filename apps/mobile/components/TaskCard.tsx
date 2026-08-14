@@ -38,7 +38,7 @@ export function TaskCard({ task, entry, onUpdate, commentPlaceholder = "Note for
           onPress={() => setShowComment((v) => !v)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.commentBtnText, comment ? styles.commentBtnTextActive : null]}>✏</Text>
+          <Text style={[styles.commentBtnText, comment ? styles.commentBtnTextActive : null]}>✎</Text>
         </TouchableOpacity>
       </View>
 

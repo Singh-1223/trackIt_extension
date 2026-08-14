@@ -8,7 +8,7 @@ import { TodoList } from "../../components/TodoList";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { upsertEntry } from "../../lib/store";
 import { formatDateLabel, getLastNDays, getTodayString } from "../../lib/utils";
-import { colors, fontSize, radius, shadow, spacing } from "../../theme";
+import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
 import type { TrackItStore } from "../../types/index";
 
 const TODAY = getTodayString();
@@ -60,8 +60,7 @@ export default function TodayScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={s.heroTitle}>Today's prep</Text>
-        <Text style={s.heroSub}>Check off tasks as you complete them. Tap ✏ to add a note.</Text>
+        <Text style={s.heroTitle}> ਸ. ਮ. ਸ. ਦ. ਮ. ਦ. ਕ. ਰ. ਲ. </Text>
       </View>
 
       {error ? <Text style={s.errorText}>{error}</Text> : null}
@@ -252,7 +251,7 @@ function BookAccordion({ book }: { book: TrackItStore["books"][number] }) {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.md },
+  content: { padding: spacing.md, paddingTop: TOP_PADDING },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
   hero: {
     backgroundColor: colors.surfaceStrong,

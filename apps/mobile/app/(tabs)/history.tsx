@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { HistoryView } from "../../components/HistoryView";
 import { useStoreContext } from "../../hooks/StoreContext";
-import { colors, fontSize, radius, shadow, spacing } from "../../theme";
+import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
 
 export default function HistoryScreen() {
   const { store, loading } = useStoreContext();
@@ -28,7 +28,7 @@ export default function HistoryScreen() {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.md },
+  content: { padding: spacing.md, paddingTop: TOP_PADDING },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
   header: {
     backgroundColor: colors.surfaceStrong,

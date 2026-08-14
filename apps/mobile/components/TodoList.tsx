@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -258,67 +259,10 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
 
   function renderTodoCard(todo: Todo, isDone = false) {
     const dueBadge = dueBadgeStyle(todo.dueDate, today);
-    const isEditing = editId === todo.id && !compact;
 
     return (
       <View key={todo.id} style={[s.card, isDone && s.cardDone]}>
-        {isEditing ? (
-          <View>
-            <TextInput
-              style={s.input}
-              value={editTitle}
-              onChangeText={setEditTitle}
-              placeholder="Title"
-              placeholderTextColor={colors.inkSoft}
-              autoFocus
-            />
-            <TextInput
-              style={[s.input, s.textarea]}
-              value={editDesc}
-              onChangeText={setEditDesc}
-              placeholder="Description (optional)"
-              placeholderTextColor={colors.inkSoft}
-              multiline
-              numberOfLines={2}
-            />
-            <TextInput
-              style={s.input}
-              value={editDue}
-              onChangeText={setEditDue}
-              placeholder="Due date (YYYY-MM-DD, optional)"
-              placeholderTextColor={colors.inkSoft}
-            />
-            {/* Priority selector — direct pick, no cycling */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.priorityRow}>
-              {PRIORITIES.map((p) => {
-                const isSelected = editPriority === p.value;
-                const bg = p.value != null ? priorityColors[p.value].bg : colors.border;
-                const textColor = p.value != null ? priorityColors[p.value].text : colors.inkSoft;
-                return (
-                  <TouchableOpacity
-                    key={String(p.value)}
-                    style={[s.priorityPill, isSelected && { backgroundColor: bg, borderColor: textColor, borderWidth: 1.5 }]}
-                    onPress={() => setEditPriority(p.value)}
-                  >
-                    <Text style={[s.priorityPillText, isSelected && { color: textColor }]}>
-                      {p.value != null ? `P${p.value}` : "None"}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-            <View style={s.editBtnRow}>
-              <TouchableOpacity style={s.saveBtn} onPress={handleSaveEdit}>
-                <Text style={s.saveBtnText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.cancelBtn} onPress={cancelEdit}>
-                <Text style={s.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-            {renderSubTasks(todo)}
-          </View>
-        ) : (
-          <View>
+        <View>
             <View style={s.cardRow}>
               <TouchableOpacity
                 style={[s.todoCheck, isDone && s.todoCheckDone]}
@@ -345,17 +289,17 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
               </View>
               {!compact && !isDone && (
                 <TouchableOpacity style={s.editBtn} onPress={() => startEdit(todo)}>
-                  <Text style={s.editBtnText}>Edit</Text>
+                  <Text style={s.editBtnText}>✎</Text>
                 </TouchableOpacity>
               )}
               {!compact && isDone && (
                 <TouchableOpacity style={s.undoBtn} onPress={() => handleToggleDone(todo)}>
-                  <Text style={s.undoBtnText}>Undo</Text>
+                  <Text style={s.undoBtnText}>↩</Text>
                 </TouchableOpacity>
               )}
               {!compact && (
                 <TouchableOpacity style={s.delBtn} onPress={() => handleDelete(todo.id)}>
-                  <Text style={s.delBtnText}>Delete</Text>
+                  <Text style={s.delBtnText}>🗑</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -365,7 +309,6 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
             <Text style={s.createdAt}>Added {formatCreatedAt(todo.createdAt)}</Text>
             {renderSubTasks(todo, isDone || compact)}
           </View>
-        )}
       </View>
     );
   }
@@ -393,7 +336,7 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
         </View>
       )}
 
-      {!compact && (
+      {/* {!compact && (
         <View style={s.addForm}>
           <TextInput
             style={s.input}
@@ -424,7 +367,85 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
             <Text style={s.primaryBtnText}>Add To-Do</Text>
           </TouchableOpacity>
         </View>
-      )}
+      )} */}
+
+      {/* Edit To-Do Modal */}
+      <Modal visible={editId !== null && !compact} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Edit To-Do</Text>
+              <TouchableOpacity onPress={cancelEdit}>
+                <Text style={s.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput style={s.input} value={editTitle} onChangeText={setEditTitle} placeholder="Title" placeholderTextColor={colors.inkSoft} autoFocus />
+            <TextInput style={[s.input, s.textarea]} value={editDesc} onChangeText={setEditDesc} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} multiline />
+            <TextInput style={s.input} value={editDue} onChangeText={setEditDue} placeholder="Due date (YYYY-MM-DD)" placeholderTextColor={colors.inkSoft} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.priorityRow}>
+              {PRIORITIES.map((p) => {
+                const isSelected = editPriority === p.value;
+                const bg = p.value != null ? priorityColors[p.value].bg : colors.border;
+                const textColor = p.value != null ? priorityColors[p.value].text : colors.inkSoft;
+                return (
+                  <TouchableOpacity
+                    key={String(p.value)}
+                    style={[s.priorityPill, isSelected && { backgroundColor: bg, borderColor: textColor, borderWidth: 1.5 }]}
+                    onPress={() => setEditPriority(p.value)}
+                  >
+                    <Text style={[s.priorityPillText, isSelected && { color: textColor }]}>
+                      {p.value != null ? `P${p.value}` : "None"}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Sub-tasks section inside edit modal */}
+            {(() => {
+              const editingTodo = todos.find((t) => t.id === editId);
+              if (!editingTodo) return null;
+              return (
+                <View style={s.modalSubtasks}>
+                  <Text style={s.modalSubtasksLabel}>Sub-tasks ({editingTodo.subTasks.length})</Text>
+                  {editingTodo.subTasks.map((sub) => (
+                    <View key={sub.id} style={s.modalSubRow}>
+                      <TouchableOpacity
+                        style={[s.todoCheck, sub.done && s.todoCheckDone, { width: 18, height: 18, borderRadius: 9 }]}
+                        onPress={() => handleToggleSubTask(editingTodo, sub.id)}
+                      >
+                        {sub.done && <Text style={[s.miniCheckMark, { fontSize: 10 }]}>✓</Text>}
+                      </TouchableOpacity>
+                      <Text style={[s.modalSubTitle, sub.done && { textDecorationLine: "line-through", color: colors.inkSoft }]}>{sub.title}</Text>
+                      <TouchableOpacity onPress={() => handleDeleteSubTask(editingTodo, sub.id)}>
+                        <Text style={{ color: colors.danger, fontSize: 10 }}>🗑</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <View style={s.modalSubAddRow}>
+                    <TextInput
+                      style={[s.input, { flex: 1, marginBottom: 0 }]}
+                      placeholder="New sub-task…"
+                      placeholderTextColor={colors.inkSoft}
+                      value={subAddTitle[editId!] ?? ""}
+                      onChangeText={(v) => setSubAddTitle((prev) => ({ ...prev, [editId!]: v }))}
+                      onSubmitEditing={() => handleAddSubTask(editingTodo)}
+                      returnKeyType="done"
+                    />
+                    <TouchableOpacity style={s.modalSubAddBtn} onPress={() => handleAddSubTask(editingTodo)}>
+                      <Text style={s.modalSubAddBtnText}>＋</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })()}
+
+            <TouchableOpacity style={s.primaryBtn} onPress={handleSaveEdit}>
+              <Text style={s.primaryBtnText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -475,11 +496,11 @@ const s = StyleSheet.create({
   dueBadgeText: { fontSize: fontSize.xs, color: colors.inkSoft, fontWeight: "600" },
   desc: { fontSize: fontSize.base, color: colors.inkSoft, marginTop: spacing.xs, paddingLeft: 28, lineHeight: 22 },
   createdAt: { fontSize: fontSize.xs, color: colors.inkSoft, marginTop: 2, paddingLeft: 28 },
-  editBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: 9, paddingVertical: 4 },
+  editBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: 2, paddingVertical: 2 },
   editBtnText: { fontSize: fontSize.xs, color: colors.ink, fontWeight: "600" },
-  undoBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: 9, paddingVertical: 4 },
+  undoBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: 2, paddingVertical: 2 },
   undoBtnText: { fontSize: fontSize.xs, color: colors.ink, fontWeight: "600" },
-  delBtn: { borderRadius: radius.xs, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: colors.dangerBg },
+  delBtn: { borderRadius: radius.xs, paddingHorizontal: 2, paddingVertical: 2, backgroundColor: colors.dangerBg },
   delBtnText: { fontSize: fontSize.xs, color: colors.danger, fontWeight: "600" },
   input: {
     backgroundColor: colors.bg,
@@ -541,4 +562,17 @@ const s = StyleSheet.create({
   addForm: { marginTop: spacing.sm },
   primaryBtn: { backgroundColor: colors.accent, borderRadius: radius.sm, paddingVertical: spacing.sm, alignItems: "center" },
   primaryBtnText: { color: colors.white, fontSize: fontSize.base, fontWeight: "700" },
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: spacing.lg },
+  modalContent: { backgroundColor: colors.surfaceStrong, borderRadius: radius.lg, padding: spacing.lg },
+  modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: "800", color: colors.ink },
+  modalClose: { fontSize: 20, color: colors.inkSoft, padding: spacing.xs },
+  modalSubtasks: { marginTop: spacing.sm, marginBottom: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
+  modalSubtasksLabel: { fontSize: fontSize.xs, fontWeight: "700", color: colors.inkSoft, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: spacing.xs },
+  modalSubRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
+  modalSubTitle: { flex: 1, fontSize: fontSize.sm, color: colors.ink },
+  modalSubAddRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: spacing.xs },
+  modalSubAddBtn: { backgroundColor: colors.accent, width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  modalSubAddBtnText: { color: colors.white, fontSize: 16, fontWeight: "700" },
 });

@@ -133,7 +133,7 @@ function BookCard({
   onDelete: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [editingBook, setEditingBook] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editTitle, setEditTitle] = useState(book.title);
   const [editAuthor, setEditAuthor] = useState(book.author);
   const [editDesc, setEditDesc] = useState(book.description);
@@ -145,15 +145,15 @@ function BookCard({
     const t = editTitle.trim();
     if (!t) return;
     onSave({ ...book, title: t, author: editAuthor.trim(), description: editDesc.trim(), status: editStatus, updatedAt: Date.now() });
-    setEditingBook(false);
+    setShowEditModal(false);
   }
 
-  function cancelBookEdit() {
+  function openEditModal() {
     setEditTitle(book.title);
     setEditAuthor(book.author);
     setEditDesc(book.description);
     setEditStatus(book.status);
-    setEditingBook(false);
+    setShowEditModal(true);
   }
 
   function addNote() {
@@ -202,51 +202,19 @@ function BookCard({
       {/* Expanded body */}
       {open && (
         <View style={s.bookBody}>
-          {/* Book edit form */}
-          {editingBook && !compact ? (
-            <View style={s.bookEditForm}>
-              <TextInput style={s.input} placeholder="Title" placeholderTextColor={colors.inkSoft} value={editTitle} onChangeText={setEditTitle} />
-              <TextInput style={s.input} placeholder="Author" placeholderTextColor={colors.inkSoft} value={editAuthor} onChangeText={setEditAuthor} />
-              <TextInput style={[s.input, { minHeight: 60 }]} placeholder="Description" placeholderTextColor={colors.inkSoft} value={editDesc} onChangeText={setEditDesc} multiline />
-              <View style={s.statusPicker}>
-                {STATUS_ORDER.map((st) => (
-                  <TouchableOpacity
-                    key={st}
-                    style={[s.statusChip, editStatus === st && s.statusChipActive]}
-                    onPress={() => setEditStatus(st)}
-                  >
-                    <Text style={[s.statusChipText, editStatus === st && s.statusChipTextActive]}>
-                      {STATUS_LABELS[st]}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={s.editActions}>
-                <TouchableOpacity style={s.btnPrimary} onPress={saveBookEdit}>
-                  <Text style={s.btnPrimaryText}>Save</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={s.btnSecondary} onPress={cancelBookEdit}>
-                  <Text style={s.btnSecondaryText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
+          {book.description ? <Text selectable style={s.bookDesc}>{book.description}</Text> : null}
+          {!compact && (
+            <View style={s.bookMeta}>
+              <View style={[s.statusDot, { backgroundColor: STATUS_DOT_COLOR[book.status] }]} />
+              <Text style={s.bookStatusText}>{STATUS_LABELS[book.status]}</Text>
+              <View style={{ flex: 1 }} />
+              <TouchableOpacity style={s.btnSecondarySmall} onPress={openEditModal}>
+                <Text style={s.btnSecondarySmallText}>✎</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.btnDangerSmall} onPress={handleDelete}>
+                <Text style={s.btnDangerSmallText}>🗑</Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            <>
-              {book.description ? <Text selectable style={s.bookDesc}>{book.description}</Text> : null}
-              {!compact && (
-                <View style={s.bookMeta}>
-                  <View style={[s.statusDot, { backgroundColor: STATUS_DOT_COLOR[book.status] }]} />
-                  <Text style={s.bookStatusText}>{STATUS_LABELS[book.status]}</Text>
-                  <View style={{ flex: 1 }} />
-                  <TouchableOpacity style={s.btnSecondarySmall} onPress={() => setEditingBook(true)}>
-                    <Text style={s.btnSecondarySmallText}>Edit Book</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.btnDangerSmall} onPress={handleDelete}>
-                    <Text style={s.btnDangerSmallText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </>
           )}
 
           {/* Notes */}
@@ -294,6 +262,39 @@ function BookCard({
                 />
                 <TouchableOpacity style={s.btnPrimary} onPress={() => { addNote(); setShowAddNote(false); }}>
                   <Text style={s.btnPrimaryText}>Add Note</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Edit Book Modal */}
+          <Modal visible={showEditModal} animationType="slide" transparent>
+            <View style={s.modalOverlay}>
+              <View style={s.modalContent}>
+                <View style={s.modalHeader}>
+                  <Text style={s.modalTitle}>Edit Book</Text>
+                  <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                    <Text style={s.modalClose}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput style={s.input} placeholder="Title" placeholderTextColor={colors.inkSoft} value={editTitle} onChangeText={setEditTitle} />
+                <TextInput style={s.input} placeholder="Author" placeholderTextColor={colors.inkSoft} value={editAuthor} onChangeText={setEditAuthor} />
+                <TextInput style={[s.input, { minHeight: 60 }]} placeholder="Description" placeholderTextColor={colors.inkSoft} value={editDesc} onChangeText={setEditDesc} multiline />
+                <View style={s.statusPicker}>
+                  {STATUS_ORDER.map((st) => (
+                    <TouchableOpacity
+                      key={st}
+                      style={[s.statusChip, editStatus === st && s.statusChipActive]}
+                      onPress={() => setEditStatus(st)}
+                    >
+                      <Text style={[s.statusChipText, editStatus === st && s.statusChipTextActive]}>
+                        {STATUS_LABELS[st]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TouchableOpacity style={s.btnPrimary} onPress={saveBookEdit}>
+                  <Text style={s.btnPrimaryText}>Save</Text>
                 </TouchableOpacity>
               </View>
             </View>

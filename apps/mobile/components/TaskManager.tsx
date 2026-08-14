@@ -16,6 +16,25 @@ interface TaskManagerProps {
   onSave: (updated: TrackItStore) => void;
 }
 
+function GroupAccordion({ group, children, onEdit, onDelete }: { group: TaskGroup; children: React.ReactNode; onEdit: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={s.groupCard}>
+      <TouchableOpacity style={s.groupHeaderRow} onPress={() => setOpen((v) => !v)} activeOpacity={0.7}>
+        <Text style={s.chevron}>{open ? "▾" : "▸"}</Text>
+        <Text style={s.groupName}>{group.name}</Text>
+        <TouchableOpacity style={s.secondaryBtn} onPress={onEdit} hitSlop={8}>
+          <Text style={s.secondaryBtnText}>✎</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.dangerBtn} onPress={onDelete} hitSlop={8}>
+          <Text style={s.dangerBtnText}>🗑</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+      {open && <View style={s.groupBody}>{children}</View>}
+    </View>
+  );
+}
+
 export function TaskManager({ store, onSave }: TaskManagerProps) {
   const [addTaskInputs, setAddTaskInputs] = useState<Record<string, string>>({});
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -114,45 +133,33 @@ export function TaskManager({ store, onSave }: TaskManagerProps) {
           .sort((a, b) => a.order - b.order);
 
         return (
-          <View key={group.id} style={s.groupCard}>
-            <View style={s.groupHeader}>
-              {editingGroupId === group.id ? (
-                <View style={s.inlineEdit}>
-                  <TextInput
-                    style={[s.input, { flex: 1 }]}
-                    value={editingGroupName}
-                    onChangeText={setEditingGroupName}
-                    autoFocus
-                    onSubmitEditing={() => handleSaveGroupEdit(group.id)}
-                    returnKeyType="done"
-                  />
-                  <TouchableOpacity style={s.saveBtn} onPress={() => handleSaveGroupEdit(group.id)}>
-                    <Text style={s.saveBtnText}>Save</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={s.cancelBtn}
-                    onPress={() => { setEditingGroupId(null); setEditingGroupName(""); }}
-                  >
-                    <Text style={s.cancelBtnText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={s.groupHeaderRow}>
-                  <Text style={s.groupName}>{group.name}</Text>
-                  <View style={s.groupActions}>
-                    <TouchableOpacity
-                      style={s.secondaryBtn}
-                      onPress={() => { setEditingGroupId(group.id); setEditingGroupName(group.name); }}
-                    >
-                      <Text style={s.secondaryBtnText}>Rename</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={s.dangerBtn} onPress={() => handleDeleteGroup(group.id)}>
-                      <Text style={s.dangerBtnText}>Delete</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-            </View>
+          <GroupAccordion
+            key={group.id}
+            group={group}
+            onEdit={() => { setEditingGroupId(group.id); setEditingGroupName(group.name); }}
+            onDelete={() => handleDeleteGroup(group.id)}
+          >
+            {editingGroupId === group.id && (
+              <View style={s.inlineEdit}>
+                <TextInput
+                  style={[s.input, { flex: 1 }]}
+                  value={editingGroupName}
+                  onChangeText={setEditingGroupName}
+                  autoFocus
+                  onSubmitEditing={() => handleSaveGroupEdit(group.id)}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity style={s.saveBtn} onPress={() => handleSaveGroupEdit(group.id)}>
+                  <Text style={s.saveBtnText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={s.cancelBtn}
+                  onPress={() => { setEditingGroupId(null); setEditingGroupName(""); }}
+                >
+                  <Text style={s.cancelBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {groupTasks.map((task, idx) => (
               <View key={task.id} style={s.taskRow}>
@@ -183,10 +190,10 @@ export function TaskManager({ store, onSave }: TaskManagerProps) {
                       style={s.secondaryBtn}
                       onPress={() => { setEditingTaskId(task.id); setEditingTitle(task.title); }}
                     >
-                      <Text style={s.secondaryBtnText}>Edit</Text>
+                      <Text style={s.secondaryBtnText}>✎</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={s.dangerBtn} onPress={() => handleDeleteTask(task.id)}>
-                      <Text style={s.dangerBtnText}>Del</Text>
+                      <Text style={s.dangerBtnText}>🗑</Text>
                     </TouchableOpacity>
                     <View style={s.orderBtns}>
                       <TouchableOpacity
@@ -223,11 +230,11 @@ export function TaskManager({ store, onSave }: TaskManagerProps) {
                 <Text style={s.addBtnText}>Add</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </GroupAccordion>
         );
       })}
 
-      <View style={s.addGroupRow}>
+      {/* <View style={s.addGroupRow}>
         <TextInput
           style={[s.input, { flex: 1, marginBottom: 0 }]}
           placeholder="New group name…"
@@ -240,7 +247,7 @@ export function TaskManager({ store, onSave }: TaskManagerProps) {
         <TouchableOpacity style={s.addBtn} onPress={handleAddGroup}>
           <Text style={s.addBtnText}>Add group</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </View>
   );
 }
@@ -252,11 +259,13 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: spacing.md,
-    padding: spacing.sm,
+    overflow: "hidden",
   },
   groupHeader: { marginBottom: spacing.xs },
-  groupHeaderRow: { flexDirection: "row", alignItems: "center" },
+  groupHeaderRow: { flexDirection: "row", alignItems: "center", padding: spacing.sm, gap: spacing.xs },
+  chevron: { fontSize: fontSize.base, color: colors.inkSoft, width: 14 },
   groupName: { flex: 1, fontSize: fontSize.md, fontWeight: "700", color: colors.ink },
+  groupBody: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm },
   groupActions: { flexDirection: "row", gap: spacing.xs },
   inlineEdit: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   input: {
@@ -274,9 +283,9 @@ const s = StyleSheet.create({
   saveBtnText: { color: colors.white, fontSize: fontSize.xs, fontWeight: "700" },
   cancelBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: spacing.xs + 2, paddingVertical: 5 },
   cancelBtnText: { color: colors.inkSoft, fontSize: fontSize.xs },
-  secondaryBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: spacing.sm, paddingVertical: 5 },
+  secondaryBtn: { backgroundColor: colors.border, borderRadius: radius.xs, paddingHorizontal: spacing.xs, paddingVertical: 2 },
   secondaryBtnText: { fontSize: fontSize.xs, color: colors.ink, fontWeight: "600" },
-  dangerBtn: { backgroundColor: colors.dangerBg, borderRadius: radius.xs, paddingHorizontal: spacing.sm, paddingVertical: 5 },
+  dangerBtn: { backgroundColor: colors.dangerBg, borderRadius: radius.xs, paddingHorizontal: spacing.xs, paddingVertical: 2 },
   dangerBtnText: { fontSize: fontSize.xs, color: colors.danger, fontWeight: "600" },
   taskRow: {
     flexDirection: "row",

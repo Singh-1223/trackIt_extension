@@ -16,6 +16,7 @@ interface HabitViewProps {
   store: TrackItStore;
   onSave: (updated: TrackItStore) => void;
   compact?: boolean;
+  hideAddForm?: boolean;
 }
 
 const TODAY = getTodayString();
@@ -113,7 +114,7 @@ function HabitCard({
             <Text style={s.chevron}>{open ? "▲" : "▼"}</Text>
             {!compact && (
               <TouchableOpacity style={s.delBtn} onPress={() => onDelete(habit.id)}>
-                <Text style={s.delBtnText}>Delete</Text>
+                <Text style={s.delBtnText}>🗑</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -227,7 +228,7 @@ function CountGrid({
   );
 }
 
-export function HabitView({ store, onSave, compact = false }: HabitViewProps) {
+export function HabitView({ store, onSave, compact = false, hideAddForm = false }: HabitViewProps) {
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -302,7 +303,7 @@ export function HabitView({ store, onSave, compact = false }: HabitViewProps) {
     onSave({ ...store, habitEntries: updated });
   }
 
-  const addForm = !compact && (
+  const addForm = !compact && !hideAddForm && (
     <View style={s.addForm}>
       <TextInput
         style={s.input}
@@ -440,7 +441,7 @@ const s = StyleSheet.create({
   habitRange: { fontSize: fontSize.xs, color: colors.inkSoft, marginTop: 2 },
   statusBadge: { fontSize: fontSize.xs, color: colors.inkSoft, fontWeight: "600" },
   chevron: { fontSize: fontSize.xs, color: colors.inkSoft, marginLeft: 4 },
-  delBtn: { backgroundColor: colors.dangerBg, borderRadius: radius.xs, paddingHorizontal: spacing.sm, paddingVertical: 5 },
+  delBtn: { backgroundColor: colors.dangerBg, borderRadius: radius.xs, paddingHorizontal: spacing.xs, paddingVertical: 2 },
   delBtnText: { fontSize: fontSize.xs, color: colors.danger, fontWeight: "600" },
   summaryProgress: {
     height: 3,

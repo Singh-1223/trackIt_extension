@@ -3,7 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { LibraryView } from "../../components/LibraryView";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { generateId } from "../../lib/utils";
-import { colors, fontSize, radius, shadow, spacing } from "../../theme";
+import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
 import type { Book, BookStatus } from "../../types/index";
 
 const STATUS_LABELS: Record<BookStatus, string> = {
@@ -126,7 +126,7 @@ export default function LibraryScreen() {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.md },
+  content: { padding: spacing.md, paddingTop: TOP_PADDING },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
   header: {
     backgroundColor: colors.surfaceStrong,
