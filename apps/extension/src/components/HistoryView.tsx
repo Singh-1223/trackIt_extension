@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { TrackItStore } from "../types/index";
-import { formatDateLabel, getLastNDays } from "../lib/utils";
+import { formatDateLabel, getLastNDays, getTodayString } from "../lib/utils";
 
 type FilterRange = "7" | "30" | "all";
 
@@ -17,13 +17,22 @@ export function HistoryView({ store }: HistoryViewProps) {
       ? [...new Set(store.entries.map((e) => e.date))].sort().reverse()
       : getLastNDays(Number(range));
 
-  const totalTasks = store.tasks.length;
+  const today = getTodayString();
+
+  function getTotalTasks(date: string): number {
+    if (date === today) {
+      return store.tasks.length;
+    }
+    const snapshot = store.snapshots?.find((s) => s.date === date);
+    if (snapshot) {
+      return snapshot.tasks.length;
+    }
+    return store.tasks.length;
+  }
 
   function getDoneCount(date: string): number {
     return store.entries.filter((e) => e.date === date && e.done).length;
   }
-
-  const sortedGroups = [...store.groups].sort((a, b) => a.order - b.order);
 
   return (
     <div>
@@ -47,6 +56,7 @@ export function HistoryView({ store }: HistoryViewProps) {
           <div className="history-day-grid">
             {days.map((date) => {
               const doneCount = getDoneCount(date);
+              const totalTasks = getTotalTasks(date);
               const completionClass =
                 doneCount === totalTasks && totalTasks > 0
                   ? "full-complete"
@@ -69,42 +79,50 @@ export function HistoryView({ store }: HistoryViewProps) {
             })}
           </div>
 
-          {selectedDate && (
-            <div className="history-detail-panel">
-              <div className="section-title" style={{ marginBottom: 14 }}>
-                <h3 style={{ margin: 0 }}>{formatDateLabel(selectedDate)}</h3>
-              </div>
-              {sortedGroups.map((group) => {
-                const groupTasks = store.tasks
-                  .filter((t) => t.groupId === group.id)
-                  .sort((a, b) => a.order - b.order);
-                if (groupTasks.length === 0) return null;
-                return (
-                  <div key={group.id} style={{ marginBottom: 16 }}>
-                    <p className="history-group-label">{group.name}</p>
-                    {groupTasks.map((task) => {
-                      const entry = store.entries.find(
-                        (e) => e.date === selectedDate && e.taskId === task.id
-                      );
-                      return (
-                        <div key={task.id} className="history-detail-row">
-                          <span className={entry?.done ? "history-detail-done" : "history-detail-miss"}>
-                            {entry?.done ? "✓" : "○"}
-                          </span>
-                          <div>
-                            <span>{task.title}</span>
-                            {entry?.comment && (
-                              <span className="history-detail-comment">{entry.comment}</span>
-                            )}
+          {selectedDate && (() => {
+            const snapshot = store.snapshots?.find((s) => s.date === selectedDate);
+            const useSnapshot = snapshot && selectedDate !== today;
+            const activeTasks = useSnapshot ? snapshot.tasks : store.tasks;
+            const activeGroups = useSnapshot ? snapshot.groups : store.groups;
+            const sortedGroups = [...activeGroups].sort((a, b) => a.order - b.order);
+
+            return (
+              <div className="history-detail-panel">
+                <div className="section-title" style={{ marginBottom: 14 }}>
+                  <h3 style={{ margin: 0 }}>{formatDateLabel(selectedDate)}</h3>
+                </div>
+                {sortedGroups.map((group) => {
+                  const groupTasks = activeTasks
+                    .filter((t) => t.groupId === group.id)
+                    .sort((a, b) => a.order - b.order);
+                  if (groupTasks.length === 0) return null;
+                  return (
+                    <div key={group.id} style={{ marginBottom: 16 }}>
+                      <p className="history-group-label">{group.name}</p>
+                      {groupTasks.map((task) => {
+                        const entry = store.entries.find(
+                          (e) => e.date === selectedDate && e.taskId === task.id
+                        );
+                        return (
+                          <div key={task.id} className="history-detail-row">
+                            <span className={entry?.done ? "history-detail-done" : "history-detail-miss"}>
+                              {entry?.done ? "✓" : "○"}
+                            </span>
+                            <div>
+                              <span>{task.title}</span>
+                              {entry?.comment && (
+                                <span className="history-detail-comment">{entry.comment}</span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </>
       )}
     </div>

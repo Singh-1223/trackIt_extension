@@ -8,7 +8,7 @@ import { SyncStatusIndicator } from "../components/SyncStatusIndicator";
 import { AuthProvider, useAuthContext } from "../lib/auth/AuthProvider";
 import { useStartupSync } from "../lib/sync/startupSync";
 import { getSyncEngine } from "../lib/sync/syncEngineInstance";
-import { getStore, openOptionsPage, saveStore, sortedTodos, upsertEntry } from "../lib/store";
+import { ensureSnapshot, getStore, openOptionsPage, saveStore, sortedTodos, upsertEntry } from "../lib/store";
 import { formatDateLabel, getLastNDays, getTodayString } from "../lib/utils";
 import type { SyncStatus } from "../lib/sync/syncEngine";
 import type { DayEntry, Todo, TrackItStore } from "../types/index";
@@ -86,13 +86,14 @@ function AppContent() {
   function handleUpdate(date: string, taskId: string, patch: { done: boolean; comment: string }) {
     if (!store) return;
 
-    const updatedEntries = upsertEntry(store.entries, {
+    const snapshotStore = ensureSnapshot(store, date);
+    const updatedEntries = upsertEntry(snapshotStore.entries, {
       date,
       taskId,
       done: patch.done,
       comment: patch.comment
     });
-    const updatedStore: TrackItStore = { ...store, entries: updatedEntries };
+    const updatedStore: TrackItStore = { ...snapshotStore, entries: updatedEntries };
 
     setStore(updatedStore);
 
@@ -312,7 +313,11 @@ function AppContent() {
             {past7Days.map((date) => {
               const dateEntries = store.entries.filter((e) => e.date === date);
               const doneCount = dateEntries.filter((e) => e.done).length;
-              const totalCount = store.tasks.length;
+              const snapshot = store.snapshots?.find((s) => s.date === date);
+              const totalCount = snapshot ? snapshot.tasks.length : store.tasks.length;
+              const activeTasks = snapshot ? snapshot.tasks : store.tasks;
+              const activeGroups = snapshot ? snapshot.groups : store.groups;
+              const dateSortedGroups = [...activeGroups].sort((a, b) => a.order - b.order);
               return (
                 <details key={date} className="group-accordion" style={{ marginBottom: 4 }}>
                   <summary className="group-accordion-summary">
@@ -323,8 +328,8 @@ function AppContent() {
                     <span className="group-progress-badge">{doneCount} / {totalCount}</span>
                   </summary>
                   <div className="group-task-list" style={{ paddingTop: 4 }}>
-                    {sortedGroups.map((group) => {
-                      const groupTasks = store.tasks
+                    {dateSortedGroups.map((group) => {
+                      const groupTasks = activeTasks
                         .filter((t) => t.groupId === group.id)
                         .sort((a, b) => a.order - b.order);
                       if (groupTasks.length === 0) return null;

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { DayEntry, HabitEntry, Note, Todo, TrackItStore } from "../types/index";
-import { pruneOldEntries } from "./utils";
+import type { DailySnapshot, DayEntry, HabitEntry, Note, Todo, TrackItStore } from "../types/index";
+import { pruneOldEntries, pruneOldSnapshots } from "./utils";
 
 const STORAGE_KEY = "trackit.store";
 const SCHEMA_VERSION = 1;
@@ -19,6 +19,7 @@ export function buildDefaultStore(): TrackItStore {
       { id: "task-5", groupId: "grp-habits", title: "Reflect + journal — 5 min", order: 2 },
     ],
     entries: [],
+    snapshots: [],
     todos: [],
     notes: [],
     habits: [],
@@ -36,9 +37,24 @@ function migrate(raw: TrackItStore): TrackItStore {
   if (!Array.isArray(s.habits)) s = { ...s, habits: [] };
   if (!Array.isArray(s.habitEntries)) s = { ...s, habitEntries: [] };
   if (!Array.isArray(s.books)) s = { ...s, books: [] };
+  if (!Array.isArray(s.snapshots)) s = { ...s, snapshots: [] };
   if (s.todos.some((t) => !Array.isArray((t as Todo).subTasks))) {
     s = { ...s, todos: s.todos.map((t) => (Array.isArray((t as Todo).subTasks) ? t : { ...t, subTasks: [] })) };
   }
+
+  // Backfill snapshots for existing history dates that have no snapshot
+  const existingSnapshotDates = new Set((s.snapshots ?? []).map((snap) => snap.date));
+  const entryDates = [...new Set(s.entries.map((e) => e.date))];
+  const missingDates = entryDates.filter((d) => !existingSnapshotDates.has(d));
+  if (missingDates.length > 0) {
+    const newSnapshots: DailySnapshot[] = missingDates.map((date) => ({
+      date,
+      tasks: s.tasks.map((t) => ({ id: t.id, groupId: t.groupId, title: t.title, order: t.order })),
+      groups: s.groups.map((g) => ({ id: g.id, name: g.name, order: g.order })),
+    }));
+    s = { ...s, snapshots: [...s.snapshots, ...newSnapshots] };
+  }
+
   // Do NOT stamp updatedAt here — a missing/zero timestamp means "never written by user",
   // which lets the sync logic correctly prefer remote data over a fresh local store.
   return s;
@@ -56,7 +72,7 @@ export async function loadLocalStore(): Promise<TrackItStore> {
 }
 
 export async function saveLocalStore(store: TrackItStore): Promise<void> {
-  const pruned: TrackItStore = { ...store, entries: pruneOldEntries(store.entries, 90) };
+  const pruned: TrackItStore = { ...store, entries: pruneOldEntries(store.entries, 90), snapshots: pruneOldSnapshots(store.snapshots ?? [], 90) };
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
 }
 
@@ -151,4 +167,19 @@ export function formatDateLabel(dateStr: string): string {
 
 export function sortedNotes(notes: Note[]): Note[] {
   return [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+export function ensureSnapshot(store: TrackItStore, date: string): TrackItStore {
+  const snapshots = store.snapshots || [];
+  if (snapshots.find((s) => s.date === date)) {
+    return store;
+  }
+
+  const snapshot: DailySnapshot = {
+    date,
+    tasks: store.tasks.map((t) => ({ id: t.id, groupId: t.groupId, title: t.title, order: t.order })),
+    groups: store.groups.map((g) => ({ id: g.id, name: g.name, order: g.order })),
+  };
+
+  return { ...store, snapshots: [...snapshots, snapshot] };
 }

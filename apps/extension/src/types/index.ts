@@ -82,10 +82,30 @@ export interface Book {
   updatedAt: number;
 }
 
+export interface SnapshotTask {
+  id: string;
+  groupId: string;
+  title: string;
+  order: number;
+}
+
+export interface SnapshotGroup {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export interface DailySnapshot {
+  date: string;
+  tasks: SnapshotTask[];
+  groups: SnapshotGroup[];
+}
+
 export interface TrackItStore {
   groups: TaskGroup[];
   tasks: Task[];
   entries: DayEntry[];
+  snapshots: DailySnapshot[];
   todos: Todo[];
   notes: Note[];
   habits: Habit[];

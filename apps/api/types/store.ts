@@ -66,10 +66,32 @@ export interface HabitEntry {
   done: boolean;
 }
 
+// --- Snapshot interfaces for history immutability ---
+
+export interface SnapshotTask {
+  id: string;
+  groupId: string;
+  title: string;
+  order: number;
+}
+
+export interface SnapshotGroup {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export interface DailySnapshot {
+  date: string;
+  tasks: SnapshotTask[];
+  groups: SnapshotGroup[];
+}
+
 export interface TrackItStore {
   groups: TaskGroup[];
   tasks: Task[];
   entries: DayEntry[];
+  snapshots: DailySnapshot[];
   todos: Todo[];
   notes: Note[];
   habits: Habit[];
@@ -108,6 +130,7 @@ export const STORE_VALIDATION = {
     "notes",
     "habits",
     "habitEntries",
+    "snapshots",
     "schemaVersion",
   ] as const,
 
@@ -121,6 +144,7 @@ export const STORE_VALIDATION = {
     notes: "array",
     habits: "array",
     habitEntries: "array",
+    snapshots: "array",
     schemaVersion: "number",
     updatedAt: "number",
   } as const,

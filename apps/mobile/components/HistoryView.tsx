@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { formatDateLabel, getLastNDays } from "../lib/utils";
+import { formatDateLabel, getLastNDays, getTodayString } from "../lib/utils";
 import { colors, fontSize, radius, spacing } from "../theme";
 import type { TrackItStore } from "../types/index";
 
@@ -19,13 +19,17 @@ export function HistoryView({ store }: HistoryViewProps) {
       ? [...new Set(store.entries.map((e) => e.date))].sort().reverse()
       : getLastNDays(Number(range));
 
-  const totalTasks = store.tasks.length;
+  const today = getTodayString();
+
+  function getTotalTasks(date: string): number {
+    if (date === today) return store.tasks.length;
+    const snapshot = store.snapshots?.find((s) => s.date === date);
+    return snapshot ? snapshot.tasks.length : store.tasks.length;
+  }
 
   function getDoneCount(date: string): number {
     return store.entries.filter((e) => e.date === date && e.done).length;
   }
-
-  const sortedGroups = [...store.groups].sort((a, b) => a.order - b.order);
 
   return (
     <View>
@@ -50,6 +54,7 @@ export function HistoryView({ store }: HistoryViewProps) {
           <View style={s.grid}>
             {days.map((date) => {
               const doneCount = getDoneCount(date);
+              const totalTasks = getTotalTasks(date);
               const isSelected = selectedDate === date;
               let dotColor: string = colors.border;
               if (doneCount === totalTasks && totalTasks > 0) dotColor = colors.success;
@@ -69,40 +74,48 @@ export function HistoryView({ store }: HistoryViewProps) {
             })}
           </View>
 
-          {selectedDate && (
-            <View style={s.detailPanel}>
-              <Text style={s.detailTitle}>{formatDateLabel(selectedDate)}</Text>
-              {sortedGroups.map((group) => {
-                const groupTasks = store.tasks
-                  .filter((t) => t.groupId === group.id)
-                  .sort((a, b) => a.order - b.order);
-                if (groupTasks.length === 0) return null;
-                return (
-                  <View key={group.id} style={s.detailGroup}>
-                    <Text style={s.detailGroupLabel}>{group.name}</Text>
-                    {groupTasks.map((task) => {
-                      const entry = store.entries.find(
-                        (e) => e.date === selectedDate && e.taskId === task.id
-                      );
-                      return (
-                        <View key={task.id} style={s.detailRow}>
-                          <Text style={entry?.done ? s.detailDone : s.detailMiss}>
-                            {entry?.done ? "✓" : "○"}
-                          </Text>
-                          <View style={{ flex: 1 }}>
-                            <Text selectable style={s.detailTask}>{task.title}</Text>
-                            {entry?.comment ? (
-                              <Text selectable style={s.detailComment}>{entry.comment}</Text>
-                            ) : null}
+          {selectedDate && (() => {
+            const snapshot = store.snapshots?.find((s) => s.date === selectedDate);
+            const useSnapshot = snapshot && selectedDate !== today;
+            const tasksSource = useSnapshot ? snapshot.tasks : store.tasks;
+            const groupsSource = useSnapshot ? snapshot.groups : store.groups;
+            const sortedGroups = [...groupsSource].sort((a, b) => a.order - b.order);
+
+            return (
+              <View style={s.detailPanel}>
+                <Text style={s.detailTitle}>{formatDateLabel(selectedDate)}</Text>
+                {sortedGroups.map((group) => {
+                  const groupTasks = tasksSource
+                    .filter((t) => t.groupId === group.id)
+                    .sort((a, b) => a.order - b.order);
+                  if (groupTasks.length === 0) return null;
+                  return (
+                    <View key={group.id} style={s.detailGroup}>
+                      <Text style={s.detailGroupLabel}>{group.name}</Text>
+                      {groupTasks.map((task) => {
+                        const entry = store.entries.find(
+                          (e) => e.date === selectedDate && e.taskId === task.id
+                        );
+                        return (
+                          <View key={task.id} style={s.detailRow}>
+                            <Text style={entry?.done ? s.detailDone : s.detailMiss}>
+                              {entry?.done ? "✓" : "○"}
+                            </Text>
+                            <View style={{ flex: 1 }}>
+                              <Text selectable style={s.detailTask}>{task.title}</Text>
+                              {entry?.comment ? (
+                                <Text selectable style={s.detailComment}>{entry.comment}</Text>
+                              ) : null}
+                            </View>
                           </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                );
-              })}
-            </View>
-          )}
+                        );
+                      })}
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })()}
         </>
       )}
     </View>

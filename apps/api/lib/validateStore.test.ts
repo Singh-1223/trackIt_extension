@@ -6,6 +6,7 @@ function makeValidStore() {
     groups: [],
     tasks: [],
     entries: [],
+    snapshots: [],
     todos: [],
     notes: [],
     habits: [],

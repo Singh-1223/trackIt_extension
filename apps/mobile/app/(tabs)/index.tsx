@@ -6,7 +6,7 @@ import { HabitView } from "../../components/HabitView";
 import { SyncStatusIndicator } from "../../components/SyncStatusIndicator";
 import { TodoList } from "../../components/TodoList";
 import { useStoreContext } from "../../hooks/StoreContext";
-import { upsertEntry } from "../../lib/store";
+import { ensureSnapshot, upsertEntry } from "../../lib/store";
 import { formatDateLabel, getLastNDays, getTodayString } from "../../lib/utils";
 import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
 import type { TrackItStore } from "../../types/index";
@@ -32,8 +32,9 @@ export default function TodayScreen() {
   const recentNotes = [...store.notes].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5);
 
   function handleUpdate(date: string, taskId: string, patch: { done: boolean; comment: string }) {
-    const updatedEntries = upsertEntry(store!.entries, { date, taskId, ...patch });
-    save({ ...store!, entries: updatedEntries });
+    const snapshotStore = ensureSnapshot(store!, date);
+    const updatedEntries = upsertEntry(snapshotStore.entries, { date, taskId, ...patch });
+    save({ ...snapshotStore, entries: updatedEntries });
   }
 
   function handleTodoSave(updated: TrackItStore["todos"]) {
@@ -157,15 +158,20 @@ export default function TodayScreen() {
           {past7Days.map((date) => {
             const dateEntries = store.entries.filter((e) => e.date === date);
             const doneCount = dateEntries.filter((e) => e.done).length;
+            const snapshot = store.snapshots?.find((s) => s.date === date);
+            const totalCount = snapshot ? snapshot.tasks.length : store.tasks.length;
+            const activeTasks = snapshot ? snapshot.tasks : store.tasks;
+            const activeGroups = snapshot ? snapshot.groups : store.groups;
+            const dateSortedGroups = [...activeGroups].sort((a, b) => a.order - b.order);
             return (
               <Accordion
                 key={date}
                 label={formatDateLabel(date)}
-                badge={`${doneCount} / ${store.tasks.length}`}
+                badge={`${doneCount} / ${totalCount}`}
                 nested
               >
-                {sortedGroups.map((group) => {
-                  const groupTasks = store.tasks
+                {dateSortedGroups.map((group) => {
+                  const groupTasks = activeTasks
                     .filter((t) => t.groupId === group.id)
                     .sort((a, b) => a.order - b.order);
                   if (groupTasks.length === 0) return null;

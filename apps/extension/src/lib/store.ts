@@ -1,7 +1,7 @@
-import type { DayEntry, Habit, HabitEntry, Note, Task, TaskGroup, Todo, TrackItStore } from "../types/index";
+import type { DailySnapshot, DayEntry, Habit, HabitEntry, Note, SnapshotGroup, SnapshotTask, Task, TaskGroup, Todo, TrackItStore } from "../types/index";
 import { getToken } from "./auth/tokenManager";
 import { getSyncEngine } from "./sync/syncEngineInstance";
-import { pruneOldEntries } from "./utils";
+import { pruneOldEntries, pruneOldSnapshots } from "./utils";
 
 const STORAGE_KEY = "trackit.store";
 const SCHEMA_VERSION = 1;
@@ -20,7 +20,7 @@ function buildDefaultStore(): TrackItStore {
     { id: "task-5", groupId: "grp-habits", title: "Reflect + journal — 5 min", order: 2 }
   ];
 
-  return { groups, tasks, entries: [], todos: [], notes: [], habits: [], habitEntries: [], books: [], schemaVersion: SCHEMA_VERSION, updatedAt: Date.now() };
+  return { groups, tasks, entries: [], snapshots: [], todos: [], notes: [], habits: [], habitEntries: [], books: [], schemaVersion: SCHEMA_VERSION, updatedAt: Date.now() };
 }
 
 function chromeGet(key: string): Promise<Record<string, unknown>> {
@@ -95,6 +95,28 @@ export async function getStore(): Promise<TrackItStore> {
     return migrated;
   }
 
+  // Migrate: add snapshots array if missing
+  if (!Array.isArray(stored.snapshots)) {
+    const migrated = { ...stored, snapshots: [] };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
+
+  // Migrate: backfill snapshots for existing history dates that have no snapshot
+  const existingSnapshotDates = new Set((stored.snapshots ?? []).map((s) => s.date));
+  const entryDates = [...new Set(stored.entries.map((e) => e.date))];
+  const missingDates = entryDates.filter((d) => !existingSnapshotDates.has(d));
+  if (missingDates.length > 0) {
+    const newSnapshots: DailySnapshot[] = missingDates.map((date) => ({
+      date,
+      tasks: stored.tasks.map((t) => ({ id: t.id, groupId: t.groupId, title: t.title, order: t.order })),
+      groups: stored.groups.map((g) => ({ id: g.id, name: g.name, order: g.order })),
+    }));
+    const migrated = { ...stored, snapshots: [...stored.snapshots, ...newSnapshots] };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
+
   return stored;
 }
 
@@ -102,6 +124,7 @@ export async function saveStore(store: TrackItStore): Promise<void> {
   const pruned: TrackItStore = {
     ...store,
     entries: pruneOldEntries(store.entries, 90),
+    snapshots: pruneOldSnapshots(store.snapshots ?? [], 90),
     updatedAt: Date.now(),
   };
   await chromeSet({ [STORAGE_KEY]: pruned });
@@ -196,4 +219,36 @@ export function getDatesInRange(start: string, end: string): string[] {
     cur.setDate(cur.getDate() + 1);
   }
   return dates;
+}
+
+export function ensureSnapshot(store: TrackItStore, date: string): TrackItStore {
+  const snapshots = store.snapshots ?? [];
+  const existing = snapshots.find((s) => s.date === date);
+  if (existing) {
+    return store;
+  }
+
+  const snapshotTasks: SnapshotTask[] = store.tasks.map((t) => ({
+    id: t.id,
+    groupId: t.groupId,
+    title: t.title,
+    order: t.order,
+  }));
+
+  const snapshotGroups: SnapshotGroup[] = store.groups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    order: g.order,
+  }));
+
+  const newSnapshot: DailySnapshot = {
+    date,
+    tasks: snapshotTasks,
+    groups: snapshotGroups,
+  };
+
+  return {
+    ...store,
+    snapshots: [...snapshots, newSnapshot],
+  };
 }

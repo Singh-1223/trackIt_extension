@@ -1,4 +1,4 @@
-import type { DayEntry } from "../types/index";
+import type { DailySnapshot, DayEntry } from "../types/index";
 
 export function getTodayString(): string {
   const d = new Date();
@@ -38,4 +38,9 @@ export function generateId(prefix = "ti"): string {
 export function pruneOldEntries(entries: DayEntry[], cutoffDays = 90): DayEntry[] {
   const cutoff = getLastNDays(cutoffDays + 1).at(-1) ?? "";
   return entries.filter((e) => e.date >= cutoff);
+}
+
+export function pruneOldSnapshots(snapshots: DailySnapshot[], cutoffDays = 90): DailySnapshot[] {
+  const cutoff = getLastNDays(cutoffDays + 1).at(-1) ?? "";
+  return snapshots.filter((s) => s.date >= cutoff);
 }

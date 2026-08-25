@@ -40,3 +40,11 @@ export function pruneOldEntries(
   const cutoff = getLastNDays(cutoffDays + 1).at(-1) ?? "";
   return entries.filter((e) => e.date >= cutoff);
 }
+
+export function pruneOldSnapshots(
+  snapshots: import("../types/index").DailySnapshot[],
+  cutoffDays = 90
+): import("../types/index").DailySnapshot[] {
+  const cutoff = getLastNDays(cutoffDays + 1).at(-1) ?? "";
+  return snapshots.filter((s) => s.date >= cutoff);
+}
