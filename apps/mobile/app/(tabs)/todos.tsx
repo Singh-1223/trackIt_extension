@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { CalendarPicker } from "../../components/CalendarPicker";
+import { DatePickerTrigger } from "../../components/DatePickerTrigger";
 import { TodoList } from "../../components/TodoList";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { generateId, getTodayString } from "../../lib/utils";
@@ -14,6 +16,7 @@ export default function TodosScreen() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("");
+  const [showDuePicker, setShowDuePicker] = useState(false);
 
   if (loading || !store) {
     return (
@@ -75,9 +78,26 @@ export default function TodosScreen() {
             <TextInput style={s.input} placeholder="Title…" placeholderTextColor={colors.inkSoft} value={title} onChangeText={setTitle} />
             <TextInput style={[s.input, { minHeight: 70 }]} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} value={description} onChangeText={setDescription} multiline />
             <View style={s.row}>
-              <TextInput style={[s.input, { flex: 1 }]} placeholder="Due date (YYYY-MM-DD)" placeholderTextColor={colors.inkSoft} value={dueDate} onChangeText={setDueDate} />
+              <View style={{ flex: 1 }}>
+                <DatePickerTrigger
+                  label="Due date (optional)"
+                  value={dueDate || null}
+                  onPress={() => setShowDuePicker(true)}
+                />
+              </View>
               <TextInput style={[s.input, { width: 80 }]} placeholder="P1–P5" placeholderTextColor={colors.inkSoft} value={priority} onChangeText={setPriority} keyboardType="numeric" />
             </View>
+            <CalendarPicker
+              visible={showDuePicker}
+              selectedDate={dueDate || null}
+              mode="start"
+              otherDate={null}
+              onSelect={(date) => {
+                setDueDate(date);
+                setShowDuePicker(false);
+              }}
+              onDismiss={() => setShowDuePicker(false)}
+            />
             <TouchableOpacity style={s.btnPrimary} onPress={handleAdd}>
               <Text style={s.btnPrimaryText}>Add To-Do</Text>
             </TouchableOpacity>

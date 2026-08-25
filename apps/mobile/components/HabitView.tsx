@@ -7,10 +7,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { computeDayCount } from "../lib/calendarUtils";
 import { getDatesInRange, upsertHabitEntry } from "../lib/store";
 import { generateId, getTodayString } from "../lib/utils";
 import { colors, fontSize, radius, spacing } from "../theme";
 import type { Habit, TrackItStore } from "../types/index";
+import { CalendarPicker } from "./CalendarPicker";
+import { DatePickerTrigger } from "./DatePickerTrigger";
 
 interface HabitViewProps {
   store: TrackItStore;
@@ -234,6 +237,8 @@ export function HabitView({ store, onSave, compact = false, hideAddForm = false 
   const [endDate, setEndDate] = useState("");
   const [targetCount, setTargetCount] = useState("");
   const [formError, setFormError] = useState("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   // Newest first
   const allHabits = [...(store.habits ?? [])].sort((a, b) => b.createdAt - a.createdAt);
@@ -313,21 +318,49 @@ export function HabitView({ store, onSave, compact = false, hideAddForm = false 
         onChangeText={setName}
       />
       <View style={s.dateRow}>
-        <TextInput
-          style={[s.input, { flex: 1 }]}
-          placeholder="Start date (optional)"
-          placeholderTextColor={colors.inkSoft}
-          value={startDate}
-          onChangeText={setStartDate}
-        />
-        <TextInput
-          style={[s.input, { flex: 1 }]}
-          placeholder="End date (optional)"
-          placeholderTextColor={colors.inkSoft}
-          value={endDate}
-          onChangeText={setEndDate}
-        />
+        <View style={{ flex: 1 }}>
+          <DatePickerTrigger
+            label="Start date (optional)"
+            value={startDate || null}
+            onPress={() => setShowStartPicker(true)}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <DatePickerTrigger
+            label="End date (optional)"
+            value={endDate || null}
+            onPress={() => setShowEndPicker(true)}
+          />
+        </View>
       </View>
+      {startDate && endDate && (
+        <Text style={s.dayCountLabel}>{computeDayCount(startDate, endDate)} days</Text>
+      )}
+      <CalendarPicker
+        visible={showStartPicker}
+        selectedDate={startDate || null}
+        mode="start"
+        otherDate={endDate || null}
+        onSelect={(date) => {
+          setStartDate(date);
+          setShowStartPicker(false);
+          if (endDate && date > endDate) {
+            setEndDate("");
+          }
+        }}
+        onDismiss={() => setShowStartPicker(false)}
+      />
+      <CalendarPicker
+        visible={showEndPicker}
+        selectedDate={endDate || null}
+        mode="end"
+        otherDate={startDate || null}
+        onSelect={(date) => {
+          setEndDate(date);
+          setShowEndPicker(false);
+        }}
+        onDismiss={() => setShowEndPicker(false)}
+      />
       <TextInput
         style={s.input}
         placeholder="Target count (optional, e.g. 51)"
@@ -409,6 +442,7 @@ const s = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   dateRow: { flexDirection: "row", gap: spacing.xs },
+  dayCountLabel: { fontSize: fontSize.xs, color: colors.inkSoft, marginBottom: spacing.xs },
   error: { fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.xs },
   addBtn: {
     backgroundColor: colors.accent,

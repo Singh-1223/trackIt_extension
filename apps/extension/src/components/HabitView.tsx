@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { getDatesInRange, upsertHabitEntry } from "../lib/store";
 import { formatDateLabel, generateId, getTodayString } from "../lib/utils";
+import { computeDayCount } from "../lib/calendarUtils";
+import { CalendarPicker } from "./CalendarPicker";
+import { DatePickerTrigger } from "./DatePickerTrigger";
 import type { Habit, TrackItStore } from "../types/index";
 
 interface HabitViewProps {
@@ -207,6 +210,8 @@ export function HabitView({ store, onSave, compact = false }: HabitViewProps) {
   const [endDate, setEndDate] = useState("");
   const [targetCount, setTargetCount] = useState("");
   const [formError, setFormError] = useState("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   // Newest first
   const allHabits = [...(store.habits ?? [])].sort((a, b) => b.createdAt - a.createdAt);
@@ -276,20 +281,50 @@ export function HabitView({ store, onSave, compact = false }: HabitViewProps) {
           <div className="buildup-date-row">
             <div className="buildup-date-field">
               <label>From (optional)</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+              <DatePickerTrigger
+                label="Select start date"
+                value={startDate || null}
+                onClick={() => setShowStartPicker(true)}
+              />
+              <CalendarPicker
+                visible={showStartPicker}
+                selectedDate={startDate || null}
+                mode="start"
+                otherDate={endDate || null}
+                onSelect={(date) => {
+                  setStartDate(date);
+                  setShowStartPicker(false);
+                  if (endDate && date > endDate) {
+                    setEndDate("");
+                  }
+                }}
+                onDismiss={() => setShowStartPicker(false)}
               />
             </div>
             <div className="buildup-date-field">
               <label>To (optional)</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+              <DatePickerTrigger
+                label="Select end date"
+                value={endDate || null}
+                onClick={() => setShowEndPicker(true)}
+              />
+              <CalendarPicker
+                visible={showEndPicker}
+                selectedDate={endDate || null}
+                mode="end"
+                otherDate={startDate || null}
+                onSelect={(date) => {
+                  setEndDate(date);
+                  setShowEndPicker(false);
+                }}
+                onDismiss={() => setShowEndPicker(false)}
               />
             </div>
+            {startDate && endDate && (
+              <span className="buildup-day-count-badge">
+                {computeDayCount(startDate, endDate)} days
+              </span>
+            )}
             <div className="buildup-date-field">
               <label>Target count (optional)</label>
               <input

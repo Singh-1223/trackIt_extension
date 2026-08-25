@@ -1878,3 +1878,14 @@ details[open] .buildup-habit-chevron {
     transform: scale(1);
   }
 }
+
+/* ── Calendar Picker / Day Count Badge ────────────────────────────────────── */
+
+.buildup-day-count-badge {
+  display: flex;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--ink-soft, #5f4d43);
+  font-weight: 600;
+  padding: 4px 0;
+}

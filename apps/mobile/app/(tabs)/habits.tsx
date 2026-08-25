@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { CalendarPicker } from "../../components/CalendarPicker";
+import { DatePickerTrigger } from "../../components/DatePickerTrigger";
 import { HabitView } from "../../components/HabitView";
 import { useStoreContext } from "../../hooks/StoreContext";
+import { computeDayCount } from "../../lib/calendarUtils";
 import { generateId } from "../../lib/utils";
 import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
 import type { Habit } from "../../types/index";
@@ -14,6 +17,8 @@ export default function HabitsScreen() {
   const [endDate, setEndDate] = useState("");
   const [targetCount, setTargetCount] = useState("");
   const [formError, setFormError] = useState("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   if (loading || !store) {
     return (
@@ -77,9 +82,47 @@ export default function HabitsScreen() {
             </View>
             <TextInput style={s.input} placeholder="Habit name…" placeholderTextColor={colors.inkSoft} value={name} onChangeText={setName} />
             <View style={s.dateRow}>
-              <TextInput style={[s.input, { flex: 1 }]} placeholder="Start (YYYY-MM-DD)" placeholderTextColor={colors.inkSoft} value={startDate} onChangeText={setStartDate} />
-              <TextInput style={[s.input, { flex: 1 }]} placeholder="End (YYYY-MM-DD)" placeholderTextColor={colors.inkSoft} value={endDate} onChangeText={setEndDate} />
+              <View style={{ flex: 1 }}>
+                <DatePickerTrigger
+                  label="Start date (optional)"
+                  value={startDate || null}
+                  onPress={() => setShowStartPicker(true)}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <DatePickerTrigger
+                  label="End date (optional)"
+                  value={endDate || null}
+                  onPress={() => setShowEndPicker(true)}
+                />
+              </View>
             </View>
+            {startDate && endDate && (
+              <Text style={s.dayCountLabel}>{computeDayCount(startDate, endDate)} days</Text>
+            )}
+            <CalendarPicker
+              visible={showStartPicker}
+              selectedDate={startDate || null}
+              mode="start"
+              otherDate={endDate || null}
+              onSelect={(date) => {
+                setStartDate(date);
+                setShowStartPicker(false);
+                if (endDate && date > endDate) setEndDate("");
+              }}
+              onDismiss={() => setShowStartPicker(false)}
+            />
+            <CalendarPicker
+              visible={showEndPicker}
+              selectedDate={endDate || null}
+              mode="end"
+              otherDate={startDate || null}
+              onSelect={(date) => {
+                setEndDate(date);
+                setShowEndPicker(false);
+              }}
+              onDismiss={() => setShowEndPicker(false)}
+            />
             <TextInput style={s.input} placeholder="Target count (optional, e.g. 51)" placeholderTextColor={colors.inkSoft} value={targetCount} onChangeText={setTargetCount} keyboardType="numeric" />
             {formError ? <Text style={s.errorText}>{formError}</Text> : null}
             <TouchableOpacity style={s.btnPrimary} onPress={handleAdd}>
@@ -119,6 +162,7 @@ const s = StyleSheet.create({
   modalClose: { fontSize: 20, color: colors.inkSoft, padding: spacing.xs },
   input: { backgroundColor: colors.bg, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, fontSize: fontSize.base, color: colors.ink, marginBottom: spacing.sm },
   dateRow: { flexDirection: "row", gap: spacing.xs },
+  dayCountLabel: { fontSize: fontSize.xs, color: colors.inkSoft, fontWeight: "600", marginBottom: spacing.xs },
   errorText: { fontSize: fontSize.xs, color: colors.danger, marginBottom: spacing.xs },
   btnPrimary: { backgroundColor: colors.accent, borderRadius: radius.sm, paddingVertical: spacing.sm + 2, alignItems: "center", marginTop: spacing.xs },
   btnPrimaryText: { color: colors.white, fontWeight: "700", fontSize: fontSize.base },

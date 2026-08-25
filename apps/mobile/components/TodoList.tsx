@@ -13,6 +13,8 @@ import { repackPriorities, sortedTodos } from "../lib/store";
 import { generateId } from "../lib/utils";
 import { colors, fontSize, priorityColors, radius, spacing } from "../theme";
 import type { SubTask, Todo } from "../types/index";
+import { CalendarPicker } from "./CalendarPicker";
+import { DatePickerTrigger } from "./DatePickerTrigger";
 
 interface TodoListProps {
   todos: Todo[];
@@ -71,6 +73,8 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
   const [subAddTitle, setSubAddTitle] = useState<Record<string, string>>({});
   const [subAddDue, setSubAddDue] = useState<Record<string, string>>({});
   const [expandedDone, setExpandedDone] = useState(false);
+  const [showEditDuePicker, setShowEditDuePicker] = useState(false);
+  const [showSubDuePicker, setShowSubDuePicker] = useState<string | null>(null);
 
   function startEdit(todo: Todo) {
     setEditId(todo.id);
@@ -242,12 +246,23 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
                     <Text style={s.addSubBtnText}>Add</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput
-                  style={[s.subtaskInput, { marginTop: 4 }]}
-                  placeholder="Due date (YYYY-MM-DD, optional)"
-                  placeholderTextColor={colors.inkSoft}
-                  value={subAddDue[todo.id] ?? ""}
-                  onChangeText={(v) => setSubAddDue((prev) => ({ ...prev, [todo.id]: v }))}
+                <View style={{ marginTop: 4 }}>
+                  <DatePickerTrigger
+                    label="Sub-task due date (optional)"
+                    value={subAddDue[todo.id] || null}
+                    onPress={() => setShowSubDuePicker(todo.id)}
+                  />
+                </View>
+                <CalendarPicker
+                  visible={showSubDuePicker === todo.id}
+                  selectedDate={subAddDue[todo.id] || null}
+                  mode="start"
+                  otherDate={null}
+                  onSelect={(date) => {
+                    setSubAddDue((prev) => ({ ...prev, [todo.id]: date }));
+                    setShowSubDuePicker(null);
+                  }}
+                  onDismiss={() => setShowSubDuePicker(null)}
                 />
               </View>
             )}
@@ -381,7 +396,22 @@ export function TodoList({ todos, onSave, compact = false, today }: TodoListProp
             </View>
             <TextInput style={s.input} value={editTitle} onChangeText={setEditTitle} placeholder="Title" placeholderTextColor={colors.inkSoft} autoFocus />
             <TextInput style={[s.input, s.textarea]} value={editDesc} onChangeText={setEditDesc} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} multiline />
-            <TextInput style={s.input} value={editDue} onChangeText={setEditDue} placeholder="Due date (YYYY-MM-DD)" placeholderTextColor={colors.inkSoft} />
+            <DatePickerTrigger
+              label="Due date (optional)"
+              value={editDue || null}
+              onPress={() => setShowEditDuePicker(true)}
+            />
+            <CalendarPicker
+              visible={showEditDuePicker}
+              selectedDate={editDue || null}
+              mode="start"
+              otherDate={null}
+              onSelect={(date) => {
+                setEditDue(date);
+                setShowEditDuePicker(false);
+              }}
+              onDismiss={() => setShowEditDuePicker(false)}
+            />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.priorityRow}>
               {PRIORITIES.map((p) => {
                 const isSelected = editPriority === p.value;
