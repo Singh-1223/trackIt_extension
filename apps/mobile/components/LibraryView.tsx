@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Alert,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -45,7 +46,7 @@ function NoteRow({
   onSave: (updated: BookNote) => void;
   onDelete: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editText, setEditText] = useState(note.text);
 
@@ -62,10 +63,9 @@ function NoteRow({
     <View style={s.noteCard}>
       <TouchableOpacity
         style={s.noteSummary}
-        onPress={() => setOpen((v) => !v)}
+        onPress={() => setShowViewModal(true)}
         activeOpacity={0.75}
       >
-        <Text style={s.noteChevron}>{open ? "▲" : "▼"}</Text>
         <Text style={s.notePreview} numberOfLines={1}>{preview}</Text>
         {!compact && (
           <View style={s.noteActions}>
@@ -85,11 +85,30 @@ function NoteRow({
         )}
       </TouchableOpacity>
 
-      {open && (
-        <View style={s.noteBody}>
-          <Text selectable style={s.noteFullText}>{note.text}</Text>
+      {/* View Note Modal */}
+      <Modal visible={showViewModal} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContent, { maxHeight: "80%" }]}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Note</Text>
+              <TouchableOpacity onPress={() => setShowViewModal(false)}>
+                <Text style={s.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 400 }}>
+              <Text selectable style={s.noteFullText}>{note.text}</Text>
+            </ScrollView>
+            {!compact && (
+              <TouchableOpacity
+                style={[s.btnPrimary, { marginTop: spacing.md }]}
+                onPress={() => { setShowViewModal(false); setEditText(note.text); setShowEditModal(true); }}
+              >
+                <Text style={s.btnPrimaryText}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      )}
+      </Modal>
 
       {/* Edit Note Modal */}
       <Modal visible={showEditModal} animationType="slide" transparent>

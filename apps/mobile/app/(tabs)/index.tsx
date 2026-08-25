@@ -6,12 +6,16 @@ import { HabitView } from "../../components/HabitView";
 import { SyncStatusIndicator } from "../../components/SyncStatusIndicator";
 import { TodoList } from "../../components/TodoList";
 import { useStoreContext } from "../../hooks/StoreContext";
+import { formatNanakshahiDate } from "../../lib/nanakshahi";
 import { ensureSnapshot, upsertEntry } from "../../lib/store";
 import { formatDateLabel, getLastNDays, getTodayString } from "../../lib/utils";
 import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
 import type { TrackItStore } from "../../types/index";
 
 const TODAY = getTodayString();
+const ENGLISH_DAY = new Intl.DateTimeFormat("en", { weekday: "long" }).format(new Date());
+const ENGLISH_DATE = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date());
+const NANAKSHAHI_DATE = formatNanakshahiDate();
 
 export default function TodayScreen() {
   const { store, loading, error, syncStatus, save } = useStoreContext();
@@ -55,13 +59,14 @@ export default function TodayScreen() {
           </View>
           <View style={s.heroRight}>
             <SyncStatusIndicator status={syncStatus} />
-            <Text style={s.dateText}>{TODAY}</Text>
+            <Text style={s.dateText}>{ENGLISH_DAY}, {ENGLISH_DATE}</Text>
             <TouchableOpacity onPress={() => signOut()} style={s.signOutBtn}>
               <Text style={s.signOutText}>Sign out</Text>
             </TouchableOpacity>
           </View>
         </View>
         <Text style={s.heroTitle}> ਸ. ਮ. ਸ. ਦ. ਮ. ਦ. ਕ. ਰ. ਲ. </Text>
+        <Text style={s.nanakshahiDate}>{NANAKSHAHI_DATE}</Text>
       </View>
 
       {error ? <Text style={s.errorText}>{error}</Text> : null}
@@ -281,6 +286,7 @@ const s = StyleSheet.create({
   signOutBtn: { paddingHorizontal: spacing.xs, paddingVertical: 2 },
   signOutText: { fontSize: fontSize.xs, color: colors.accentStrong, fontWeight: "600" },
   heroTitle: { fontSize: fontSize.xl, fontWeight: "800", color: colors.ink, marginBottom: spacing.xs },
+  nanakshahiDate: { fontSize: fontSize.sm, color: colors.inkSoft, fontWeight: "600" },
   heroSub: { fontSize: fontSize.sm, color: colors.inkSoft, lineHeight: 20 },
   errorText: { fontSize: fontSize.sm, color: colors.danger, marginBottom: spacing.sm },
   muted: { fontSize: fontSize.sm, color: colors.inkSoft, paddingVertical: spacing.xs },

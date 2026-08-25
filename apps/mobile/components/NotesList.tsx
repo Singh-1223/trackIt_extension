@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Alert,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,6 +27,58 @@ function formatDate(ms: number): string {
   }).format(new Date(ms));
 }
 
+function NoteCard({
+  note,
+  onEdit,
+  onDelete,
+}: {
+  note: Note;
+  onEdit: (note: Note) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [showView, setShowView] = useState(false);
+
+  return (
+    <View style={s.noteCard}>
+      <TouchableOpacity style={s.noteHeader} onPress={() => setShowView(true)}>
+        <Text style={s.noteHeading} numberOfLines={1}>
+          {note.heading}
+        </Text>
+        <Text style={s.noteDate}>{formatDate(note.updatedAt)}</Text>
+      </TouchableOpacity>
+
+      {/* View Note Modal */}
+      <Modal visible={showView} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContent, { maxHeight: "80%" }]}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>{note.heading}</Text>
+              <TouchableOpacity onPress={() => setShowView(false)}>
+                <Text style={s.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {note.description ? (
+                <Text selectable style={s.noteDesc}>{note.description}</Text>
+              ) : (
+                <Text style={s.empty}>No description.</Text>
+              )}
+            </ScrollView>
+            <View style={[s.actionRow, { marginTop: spacing.md }]}>
+              <TouchableOpacity style={s.editBtn} onPress={() => { setShowView(false); onEdit(note); }}>
+                <Text style={s.editBtnText}>✎ Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.delBtn} onPress={() => { setShowView(false); onDelete(note.id); }}>
+                <Text style={s.delBtnText}>🗑 Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
 export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps) {
   const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -35,22 +88,10 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
   const [editId, setEditId] = useState<string | null>(null);
   const [editHeading, setEditHeading] = useState("");
   const [editDesc, setEditDesc] = useState("");
-
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-
-  function toggleExpanded(id: string) {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
   function startEdit(note: Note) {
     setEditId(note.id);
     setEditHeading(note.heading);
     setEditDesc(note.description);
-    setExpandedIds((prev) => new Set([...prev, note.id]));
   }
 
   function cancelEdit() {
@@ -98,39 +139,15 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
       )}
 
       {sorted.map((note) => {
-        const isExpanded = expandedIds.has(note.id);
         const isEditing = editId === note.id;
 
         return (
-          <View key={note.id} style={s.noteCard}>
-            <TouchableOpacity style={s.noteHeader} onPress={() => toggleExpanded(note.id)}>
-              <Text style={s.noteChevron}>{isExpanded ? "▾" : "▸"}</Text>
-              <Text style={s.noteHeading} numberOfLines={isExpanded ? undefined : 1}>
-                {note.heading}
-              </Text>
-              <Text style={s.noteDate}>{formatDate(note.updatedAt)}</Text>
-            </TouchableOpacity>
-
-            {isExpanded && (
-              <View style={s.noteBody}>
-                <View>
-                  {note.description ? (
-                    <Text selectable style={s.noteDesc}>{note.description}</Text>
-                  ) : (
-                    <Text style={s.empty}>No description.</Text>
-                  )}
-                  <View style={s.actionRow}>
-                    <TouchableOpacity style={s.editBtn} onPress={() => startEdit(note)}>
-                      <Text style={s.editBtnText}>✎</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={s.delBtn} onPress={() => handleDelete(note.id)}>
-                      <Text style={s.delBtnText}>🗑</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
-          </View>
+          <NoteCard
+            key={note.id}
+            note={note}
+            onEdit={startEdit}
+            onDelete={handleDelete}
+          />
         );
       })}
 
