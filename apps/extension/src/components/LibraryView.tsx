@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { generateId } from "../lib/utils";
 import type { Book, BookNote, BookStatus, TrackItStore } from "../types/index";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface LibraryViewProps {
   store: TrackItStore;
@@ -81,7 +82,7 @@ function NoteRow({
             </div>
           </>
         ) : (
-          <p className="lib-note-full">{note.text}</p>
+          <p className="lib-note-full"><MarkdownRenderer content={note.text} /></p>
         )}
       </div>
     </details>
@@ -234,7 +235,7 @@ function BookCard({
           {book.notes.map((note) =>
             compact ? (
               <div key={note.id} className="lib-note">
-                <span className="lib-note-text">{note.text}</span>
+                <MarkdownRenderer content={note.text} />
               </div>
             ) : (
               <NoteRow key={note.id} note={note} onSave={saveNote} onDelete={deleteNote} />

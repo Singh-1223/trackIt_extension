@@ -12,6 +12,7 @@ import {
 import { generateId } from "../lib/utils";
 import { colors, fontSize, radius, spacing } from "../theme";
 import type { Note } from "../types/index";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface NotesListProps {
   notes: Note[];
@@ -50,16 +51,16 @@ function NoteCard({
       {/* View Note Modal */}
       <Modal visible={showView} animationType="slide" transparent>
         <View style={s.modalOverlay}>
-          <View style={[s.modalContent, { maxHeight: "80%" }]}>
+          <View style={[s.modalContent, { flex: 1, marginVertical: "5%" }]}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>{note.heading}</Text>
               <TouchableOpacity onPress={() => setShowView(false)}>
                 <Text style={s.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 400 }}>
+            <ScrollView style={{ flex: 1 }}>
               {note.description ? (
-                <Text selectable style={s.noteDesc}>{note.description}</Text>
+                <MarkdownRenderer content={note.description} selectable />
               ) : (
                 <Text style={s.empty}>No description.</Text>
               )}

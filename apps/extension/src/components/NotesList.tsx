@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Note } from "../types/index";
 import { generateId } from "../lib/utils";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface NotesListProps {
   notes: Note[];
@@ -122,9 +123,9 @@ export function NotesList({ notes, onSave }: NotesListProps) {
                 ) : (
                   <>
                     {note.description && (
-                      <p className="todo-description" style={{ whiteSpace: "pre-wrap", marginBottom: 10 }}>
-                        {note.description}
-                      </p>
+                      <div style={{ marginBottom: 10 }}>
+                        <MarkdownRenderer content={note.description} />
+                      </div>
                     )}
                     {!note.description && (
                       <p className="muted" style={{ fontSize: "0.82rem", marginBottom: 10 }}>No description.</p>

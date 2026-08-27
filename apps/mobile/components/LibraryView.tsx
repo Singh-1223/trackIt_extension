@@ -12,6 +12,7 @@ import {
 import { generateId } from "../lib/utils";
 import { colors, fontSize, radius, spacing } from "../theme";
 import type { Book, BookNote, BookStatus, TrackItStore } from "../types/index";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface LibraryViewProps {
   store: TrackItStore;
@@ -38,11 +39,13 @@ const STATUS_DOT_COLOR: Record<BookStatus, string> = {
 function NoteRow({
   note,
   compact,
+  bookTitle,
   onSave,
   onDelete,
 }: {
   note: BookNote;
   compact: boolean;
+  bookTitle: string;
   onSave: (updated: BookNote) => void;
   onDelete: (id: string) => void;
 }) {
@@ -88,24 +91,23 @@ function NoteRow({
       {/* View Note Modal */}
       <Modal visible={showViewModal} animationType="slide" transparent>
         <View style={s.modalOverlay}>
-          <View style={[s.modalContent, { maxHeight: "80%" }]}>
+          <View style={[s.modalContent, { flex: 1, marginVertical: "5%" }]}>
             <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Note</Text>
-              <TouchableOpacity onPress={() => setShowViewModal(false)}>
-                <Text style={s.modalClose}>✕</Text>
-              </TouchableOpacity>
+              <Text style={[s.modalTitle, { flex: 1 }]} numberOfLines={1}>{bookTitle}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+                {!compact && (
+                  <TouchableOpacity onPress={() => { setShowViewModal(false); setEditText(note.text); setShowEditModal(true); }} style={{ padding: spacing.xs }}>
+                    <Text style={{ fontSize: 18, color: colors.ink }}>✎</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setShowViewModal(false)}>
+                  <Text style={s.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <ScrollView style={{ maxHeight: 400 }}>
-              <Text selectable style={s.noteFullText}>{note.text}</Text>
+            <ScrollView style={{ flex: 1 }}>
+              <MarkdownRenderer content={note.text} selectable />
             </ScrollView>
-            {!compact && (
-              <TouchableOpacity
-                style={[s.btnPrimary, { marginTop: spacing.md }]}
-                onPress={() => { setShowViewModal(false); setEditText(note.text); setShowEditModal(true); }}
-              >
-                <Text style={s.btnPrimaryText}>Edit</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
       </Modal>
@@ -254,6 +256,7 @@ function BookCard({
                 key={note.id}
                 note={note}
                 compact={compact}
+                bookTitle={book.title}
                 onSave={saveNote}
                 onDelete={deleteNote}
               />
