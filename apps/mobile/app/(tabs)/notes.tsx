@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { NotesList } from "../../components/NotesList";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { generateId } from "../../lib/utils";
@@ -56,22 +56,22 @@ export default function NotesScreen() {
       <View style={{ height: spacing.xxl }} />
 
       {/* Add Note Modal */}
-      <Modal visible={showAdd} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
+      <Modal visible={showAdd} animationType="slide" transparent onRequestClose={() => setShowAdd(false)}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={s.modalContent}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Add Note</Text>
-              <TouchableOpacity onPress={() => setShowAdd(false)}>
+              <TouchableOpacity onPress={() => setShowAdd(false)} accessibilityLabel="Close add note">
                 <Text style={s.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
             <TextInput style={s.input} placeholder="Heading…" placeholderTextColor={colors.inkSoft} value={heading} onChangeText={setHeading} />
-            <TextInput style={[s.input, { minHeight: 100 }]} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} value={description} onChangeText={setDescription} multiline />
+            <TextInput style={[s.input, s.textarea]} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} value={description} onChangeText={setDescription} multiline scrollEnabled />
             <TouchableOpacity style={s.btnPrimary} onPress={handleAdd}>
               <Text style={s.btnPrimaryText}>Add Note</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </ScrollView>
   );
@@ -98,11 +98,12 @@ const s = StyleSheet.create({
   muted: { fontSize: fontSize.sm, color: colors.inkSoft },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: spacing.lg },
-  modalContent: { backgroundColor: colors.surfaceStrong, borderRadius: radius.lg, padding: spacing.lg, ...shadow },
+  modalContent: { backgroundColor: colors.surfaceStrong, borderRadius: radius.lg, padding: spacing.lg, maxHeight: "100%", ...shadow },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
   modalTitle: { fontSize: fontSize.lg, fontWeight: "800", color: colors.ink },
   modalClose: { fontSize: 20, color: colors.inkSoft, padding: spacing.xs },
   input: { backgroundColor: colors.bg, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, fontSize: fontSize.base, color: colors.ink, marginBottom: spacing.sm },
+  textarea: { minHeight: 160, maxHeight: 360, textAlignVertical: "top" },
   btnPrimary: { backgroundColor: colors.accent, borderRadius: radius.sm, paddingVertical: spacing.sm + 2, alignItems: "center", marginTop: spacing.xs },
   btnPrimaryText: { color: colors.white, fontWeight: "700", fontSize: fontSize.base },
 });

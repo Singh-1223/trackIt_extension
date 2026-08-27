@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -89,7 +91,7 @@ function NoteRow({
       </TouchableOpacity>
 
       {/* View Note Modal */}
-      <Modal visible={showViewModal} animationType="slide" transparent>
+      <Modal visible={showViewModal} animationType="slide" transparent onRequestClose={() => setShowViewModal(false)}>
         <View style={s.modalOverlay}>
           <View style={[s.modalContent, { flex: 1, marginVertical: "5%" }]}>
             <View style={s.modalHeader}>
@@ -113,12 +115,12 @@ function NoteRow({
       </Modal>
 
       {/* Edit Note Modal */}
-      <Modal visible={showEditModal} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
+      <Modal visible={showEditModal} animationType="slide" transparent onRequestClose={() => setShowEditModal(false)}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={s.modalContent}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Edit Note</Text>
-              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+              <TouchableOpacity onPress={() => setShowEditModal(false)} accessibilityLabel="Close edit note">
                 <Text style={s.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -127,6 +129,7 @@ function NoteRow({
               value={editText}
               onChangeText={setEditText}
               multiline
+              scrollEnabled
               autoFocus
               placeholderTextColor={colors.inkSoft}
             />
@@ -134,7 +137,7 @@ function NoteRow({
               <Text style={s.btnPrimaryText}>Save</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -264,12 +267,12 @@ function BookCard({
           </View>
 
           {/* Add Note Modal */}
-          <Modal visible={showAddNote} animationType="slide" transparent>
-            <View style={s.modalOverlay}>
+          <Modal visible={showAddNote} animationType="slide" transparent onRequestClose={() => setShowAddNote(false)}>
+            <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
               <View style={s.modalContent}>
                 <View style={s.modalHeader}>
                   <Text style={s.modalTitle}>Add Note</Text>
-                  <TouchableOpacity onPress={() => setShowAddNote(false)}>
+                  <TouchableOpacity onPress={() => setShowAddNote(false)} accessibilityLabel="Close add note">
                     <Text style={s.modalClose}>✕</Text>
                   </TouchableOpacity>
                 </View>
@@ -280,17 +283,18 @@ function BookCard({
                   value={noteText}
                   onChangeText={setNoteText}
                   multiline
+                  scrollEnabled
                   autoFocus
                 />
                 <TouchableOpacity style={s.btnPrimary} onPress={() => { addNote(); setShowAddNote(false); }}>
                   <Text style={s.btnPrimaryText}>Add Note</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </KeyboardAvoidingView>
           </Modal>
 
           {/* Edit Book Modal */}
-          <Modal visible={showEditModal} animationType="slide" transparent>
+          <Modal visible={showEditModal} animationType="slide" transparent onRequestClose={() => setShowEditModal(false)}>
             <View style={s.modalOverlay}>
               <View style={s.modalContent}>
                 <View style={s.modalHeader}>
@@ -532,6 +536,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.surfaceStrong,
     borderRadius: radius.lg,
     padding: spacing.lg,
+    maxHeight: "100%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -549,7 +554,8 @@ const s = StyleSheet.create({
     padding: spacing.sm,
     fontSize: fontSize.base,
     color: colors.ink,
-    minHeight: 120,
+    minHeight: 160,
+    maxHeight: 360,
     marginBottom: spacing.sm,
     textAlignVertical: "top",
   },

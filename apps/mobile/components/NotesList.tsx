@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -49,7 +51,7 @@ function NoteCard({
       </TouchableOpacity>
 
       {/* View Note Modal */}
-      <Modal visible={showView} animationType="slide" transparent>
+      <Modal visible={showView} animationType="slide" transparent onRequestClose={() => setShowView(false)}>
         <View style={s.modalOverlay}>
           <View style={[s.modalContent, { flex: 1, marginVertical: "5%" }]}>
             <View style={s.modalHeader}>
@@ -153,22 +155,22 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
       })}
 
       {/* Edit Note Modal */}
-      <Modal visible={editId !== null} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
+      <Modal visible={editId !== null} animationType="slide" transparent onRequestClose={cancelEdit}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={s.modalContent}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Edit Note</Text>
-              <TouchableOpacity onPress={cancelEdit}>
+              <TouchableOpacity onPress={cancelEdit} accessibilityLabel="Close edit note">
                 <Text style={s.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
             <TextInput style={s.input} value={editHeading} onChangeText={setEditHeading} placeholder="Heading" placeholderTextColor={colors.inkSoft} autoFocus />
-            <TextInput style={[s.input, s.textarea]} value={editDesc} onChangeText={setEditDesc} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} multiline numberOfLines={4} />
+            <TextInput style={[s.input, s.textarea]} value={editDesc} onChangeText={setEditDesc} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} multiline scrollEnabled />
             <TouchableOpacity style={s.primaryBtn} onPress={handleSaveEdit}>
               <Text style={s.primaryBtnText}>Save</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {!hideAddForm && (
@@ -236,7 +238,7 @@ const s = StyleSheet.create({
     color: colors.ink,
     marginBottom: spacing.xs,
   },
-  textarea: { minHeight: 72, textAlignVertical: "top" },
+  textarea: { minHeight: 160, maxHeight: 360, textAlignVertical: "top" },
   saveBtn: { backgroundColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 5 },
   saveBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: "700" },
   cancelBtn: { backgroundColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 5 },
@@ -251,7 +253,7 @@ const s = StyleSheet.create({
   primaryBtnText: { color: colors.white, fontWeight: "700", fontSize: fontSize.base },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: spacing.lg },
-  modalContent: { backgroundColor: colors.surfaceStrong, borderRadius: radius.lg, padding: spacing.lg },
+  modalContent: { backgroundColor: colors.surfaceStrong, borderRadius: radius.lg, padding: spacing.lg, maxHeight: "100%" },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.md },
   modalTitle: { fontSize: fontSize.lg, fontWeight: "800", color: colors.ink },
   modalClose: { fontSize: 20, color: colors.inkSoft, padding: spacing.xs },
