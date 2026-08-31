@@ -179,8 +179,9 @@ apps/mobile/
 │   │   ├── sign-in.tsx               email/password + forgot password OTP reset flow
 │   │   └── sign-up.tsx               sign up + email verification code
 │   └── (tabs)/
-│       ├── _layout.tsx               bottom tab bar (7 tabs)
-│       ├── index.tsx                 Today — "Daily Grind" accordion wraps task groups (collapsed by default), plus accordions for todos/notes/habits/library/past-7
+│       ├── _layout.tsx               bottom tab bar (Home + Today; feature screens are opened from Home)
+│       ├── index.tsx                 Home — landing hub with shortcuts to every feature
+│       ├── today.tsx                 Today — compact daily view with Daily Grind, todos, notes, habits, library, and past-7
 │       ├── todos.tsx                 To-Dos full view
 │       ├── habits.tsx                Build-Up habit streaks
 │       ├── notes.tsx                 Notes CRUD
@@ -322,6 +323,34 @@ eas build -p android --profile preview
 # Build AAB for Play Store
 eas build -p android --profile production
 ```
+
+#### Expo Go connection and cache troubleshooting
+
+Use `--clear` when Metro may be serving stale JavaScript or configuration. It clears Metro's local cache before starting the server:
+
+```bash
+npx expo start --clear
+```
+
+By default, Expo serves the app over the local network (LAN). This is fastest, but the device or emulator must be able to reach the Mac's IP address and port `8081`.
+
+If Expo Go stays on a loading screen or reports a timeout connecting to an address such as `192.168.x.x:8081`, use a tunnel instead:
+
+```bash
+npx expo start --tunnel --clear
+```
+
+`--tunnel` routes the Expo connection through the internet rather than directly over the LAN. It is useful when a firewall, VPN, guest Wi-Fi, or Android emulator network prevents the device from reaching Metro. It can be slower than LAN, but is usually more reliable in those situations.
+
+For Android-emulator errors, confirm the emulator is detected and inspect native logs:
+
+```bash
+adb devices
+adb logcat -c
+adb logcat | grep -Ei 'expo|reactnative|androidruntime|fatal|error'
+```
+
+The log stream will show whether the problem is a Metro connection timeout, an Expo Go version mismatch, or an application crash.
 
 ---
 
