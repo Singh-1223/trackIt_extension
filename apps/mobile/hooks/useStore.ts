@@ -95,8 +95,8 @@ export function useStore() {
         } else if (!localHasData && !remoteHasData) {
           winner = local;
         } else {
-          const localRichness = (local.tasks?.length ?? 0) + (local.entries?.length ?? 0) + (local.todos?.length ?? 0);
-          const remoteRichness = (remote.tasks?.length ?? 0) + (remote.entries?.length ?? 0) + (remote.todos?.length ?? 0);
+          const localRichness = (local.tasks?.length ?? 0) + (local.entries?.length ?? 0) + (local.todos?.length ?? 0) + (local.notes?.length ?? 0) + (local.reflections?.length ?? 0);
+          const remoteRichness = (remote.tasks?.length ?? 0) + (remote.entries?.length ?? 0) + (remote.todos?.length ?? 0) + (remote.notes?.length ?? 0) + (remote.reflections?.length ?? 0);
           if (localRichness !== remoteRichness) {
             winner = localRichness > remoteRichness ? local : remote;
           } else {

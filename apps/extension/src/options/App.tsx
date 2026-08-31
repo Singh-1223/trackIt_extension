@@ -3,9 +3,12 @@ import { HistoryView } from "../components/HistoryView";
 import { HabitView } from "../components/HabitView";
 import { LibraryView } from "../components/LibraryView";
 import { NotesList } from "../components/NotesList";
+import { ReflectionsView } from "../components/ReflectionsView";
 import { TaskManager } from "../components/TaskManager";
 import { TodoList } from "../components/TodoList";
 import { AuthButton } from "../components/AuthButton";
+import { AppLockGate } from "../components/AppLockGate";
+import { AppLockSettings } from "../components/AppLockSettings";
 import { SyncStatusIndicator } from "../components/SyncStatusIndicator";
 import { AuthProvider, useAuthContext } from "../lib/auth/AuthProvider";
 import { useStartupSync } from "../lib/sync/startupSync";
@@ -15,7 +18,7 @@ import { getTodayString } from "../lib/utils";
 import type { SyncStatus } from "../lib/sync/syncEngine";
 import type { Note, Todo, TrackItStore } from "../types/index";
 
-type Tab = "history" | "buildup" | "library" | "manage" | "todos" | "notes";
+type Tab = "history" | "buildup" | "library" | "manage" | "todos" | "notes" | "reflections" | "security";
 
 /**
  * Top-level App wraps the content in AuthProvider so auth context
@@ -27,7 +30,9 @@ type Tab = "history" | "buildup" | "library" | "manage" | "todos" | "notes";
 export function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <AppLockGate>
+        <AppContent />
+      </AppLockGate>
     </AuthProvider>
   );
 }
@@ -110,6 +115,11 @@ function AppContent() {
     await handleSave({ ...store, notes: updated });
   }
 
+  async function handleNoteGroupsSave(updated: TrackItStore["noteGroups"]) {
+    if (!store) return;
+    await handleSave({ ...store, noteGroups: updated });
+  }
+
   async function handleHabitSave(updated: TrackItStore) {
     await handleSave(updated);
   }
@@ -172,10 +182,24 @@ function AppContent() {
         </button>
         <button
           type="button"
+          className={`tab-btn${tab === "reflections" ? " active" : ""}`}
+          onClick={() => setTab("reflections")}
+        >
+          Reflections
+        </button>
+        <button
+          type="button"
           className={`tab-btn${tab === "manage" ? " active" : ""}`}
           onClick={() => setTab("manage")}
         >
           Manage Tasks
+        </button>
+        <button
+          type="button"
+          className={`tab-btn${tab === "security" ? " active" : ""}`}
+          onClick={() => setTab("security")}
+        >
+          Security
         </button>
       </nav>
 
@@ -193,7 +217,11 @@ function AppContent() {
       ) : tab === "todos" ? (
         <TodoList todos={store.todos} onSave={handleTodoSave} today={today} />
       ) : tab === "notes" ? (
-        <NotesList notes={store.notes ?? []} onSave={handleNoteSave} />
+        <NotesList notes={store.notes ?? []} groups={store.noteGroups ?? []} onSave={handleNoteSave} onGroupsSave={handleNoteGroupsSave} />
+      ) : tab === "reflections" ? (
+        <ReflectionsView reflections={store.reflections ?? []} categories={store.reflectionCategories ?? []} onSave={(reflections, reflectionCategories) => handleSave({ ...store, reflections, reflectionCategories })} />
+      ) : tab === "security" ? (
+        <AppLockSettings />
       ) : (
         <TaskManager store={store} onSave={handleSave} />
       )}

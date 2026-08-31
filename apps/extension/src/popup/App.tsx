@@ -4,6 +4,7 @@ import { HabitView } from "../components/HabitView";
 import { LibraryView } from "../components/LibraryView";
 import { TodoList } from "../components/TodoList";
 import { AuthButton } from "../components/AuthButton";
+import { AppLockGate } from "../components/AppLockGate";
 import { SyncStatusIndicator } from "../components/SyncStatusIndicator";
 import { AuthProvider, useAuthContext } from "../lib/auth/AuthProvider";
 import { useStartupSync } from "../lib/sync/startupSync";
@@ -25,7 +26,9 @@ const TODAY = getTodayString();
 export function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <AppLockGate>
+        <AppContent />
+      </AppLockGate>
     </AuthProvider>
   );
 }
@@ -110,7 +113,8 @@ function AppContent() {
   const past7Days = getLastNDays(8).slice(1); // last 7 days excluding today
   const sortedGroups = store ? [...store.groups].sort((a, b) => a.order - b.order) : [];
   const pendingTodos = store ? sortedTodos(store.todos).pending : [];
-  const recentNotes = store ? [...(store.notes ?? [])].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5) : [];
+  const noteSections = store ? [...(store.noteGroups ?? []).sort((a, b) => a.order - b.order).map((group) => ({ name: group.name, notes: store.notes.filter((note) => note.groupId === group.id) })), { name: "Unsorted", notes: store.notes.filter((note) => !note.groupId) }].filter((section) => section.notes.length > 0) : [];
+  const reflectionSections = store ? [...(store.reflectionCategories ?? []).sort((a, b) => a.order - b.order).map((category) => ({ name: category.name, entries: (store.reflections ?? []).filter((entry) => entry.categoryId === category.id) })), { name: "Unsorted", entries: (store.reflections ?? []).filter((entry) => !entry.categoryId) }].filter((section) => section.entries.length > 0) : [];
 
   async function handleTodoSave(updated: Todo[]) {
     if (!store) return;
@@ -225,44 +229,63 @@ function AppContent() {
         </details>
       )}
 
+      {/* Reflections accordion */}
+      {store !== null && (
+        <details className="group-accordion" style={{ marginTop: 8 }}>
+          <summary className="group-accordion-summary">
+            <span className="group-accordion-chevron" aria-hidden="true" />
+            <span className="group-accordion-name">Reflections</span>
+            {(store.reflections ?? []).length > 0 && <span className="group-progress-badge">{store.reflections?.length}</span>}
+          </summary>
+          {reflectionSections.length === 0 ? (
+            <p className="muted" style={{ fontSize: "0.83rem", padding: "4px 2px 6px" }}>No reflections yet. Add them in the mobile app.</p>
+          ) : (
+            <div className="group-task-list">
+              {reflectionSections.map((section) => (
+                <details key={section.name} className="group-accordion" style={{ marginBottom: 6, overflow: "hidden" }}>
+                  <summary className="group-accordion-summary">
+                    <span className="group-accordion-chevron" aria-hidden="true" />
+                    <span style={{ fontSize: "0.9rem", fontWeight: 700 }}>{section.name}</span>
+                    <span className="group-progress-badge">{section.entries.length}</span>
+                  </summary>
+                  <div style={{ padding: "4px 16px 12px", overflow: "hidden" }}>
+                    {section.entries.map((entry) => <details key={entry.id} className="todo-done-details"><summary><span style={{ fontWeight: 600 }}>{entry.title}</span></summary><div style={{ padding: "4px 0 8px" }}><span className="muted" style={{ display: "block", fontSize: "0.76rem", marginBottom: 4 }}>{formatReflectionDate(entry.date)}</span>{entry.content ? <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{entry.content}</span> : null}{entry.tags.length > 0 && <span style={{ display: "block", marginTop: 6, fontSize: "0.76rem", color: "var(--accent-strong)" }}>{entry.tags.map((tag) => `#${tag}`).join("  ")}</span>}</div></details>)}
+                  </div>
+                </details>
+              ))}
+            </div>
+          )}
+        </details>
+      )}
+
       {/* Notes accordion */}
       {store !== null && (
         <details className="group-accordion" style={{ marginTop: 8 }}>
           <summary className="group-accordion-summary">
             <span className="group-accordion-chevron" aria-hidden="true" />
             <span className="group-accordion-name">Notes</span>
-            {recentNotes.length > 0 && (
+            {noteSections.length > 0 && (
               <span className="group-progress-badge">{(store.notes ?? []).length} notes</span>
             )}
           </summary>
-          {recentNotes.length === 0 ? (
+          {noteSections.length === 0 ? (
             <p className="muted" style={{ fontSize: "0.83rem", padding: "4px 2px 6px" }}>
               No notes yet. Add them in the options page.
             </p>
           ) : (
             <div className="group-task-list">
-              {recentNotes.map((note) => (
-                <details key={note.id} className="group-accordion" style={{ marginBottom: 6, overflow: "hidden" }}>
+              {noteSections.map((section) => (
+                <details key={section.name} className="group-accordion" style={{ marginBottom: 6, overflow: "hidden" }}>
                   <summary className="group-accordion-summary">
                     <span className="group-accordion-chevron" aria-hidden="true" />
-                    <span style={{ fontSize: "0.9rem", fontWeight: 600, wordBreak: "break-word", overflowWrap: "anywhere" }}>{note.heading}</span>
+                    <span style={{ fontSize: "0.9rem", fontWeight: 700 }}>{section.name}</span>
+                    <span className="group-progress-badge">{section.notes.length}</span>
                   </summary>
                   <div style={{ padding: "4px 16px 12px", overflow: "hidden" }}>
-                    {note.description ? (
-                      <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "anywhere" }}>
-                        {note.description}
-                      </span>
-                    ) : (
-                      <span className="muted" style={{ fontSize: "0.82rem" }}>No description.</span>
-                    )}
+                    {section.notes.map((note) => <details key={note.id} className="todo-done-details"><summary><span style={{ fontWeight: 600 }}>{note.heading}</span></summary><div style={{ padding: "4px 0 8px" }}>{note.description ? <span style={{ fontSize: "0.85rem", color: "var(--ink-soft)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{note.description}</span> : <span className="muted" style={{ fontSize: "0.82rem" }}>No description.</span>}</div></details>)}
                   </div>
                 </details>
               ))}
-              {(store.notes ?? []).length > 5 && (
-                <p className="muted" style={{ fontSize: "0.82rem", padding: "4px 2px 2px" }}>
-                  +{(store.notes ?? []).length - 5} more — open options to see all
-                </p>
-              )}
             </div>
           )}
         </details>
@@ -367,4 +390,11 @@ function AppContent() {
       </div>
     </main>
   );
+}
+
+function formatReflectionDate(date: NonNullable<TrackItStore["reflections"]>[number]["date"]) {
+  if (date.precision === "unknown") return "Date unknown";
+  if (date.precision === "year") return String(date.year);
+  const month = new Date(date.year, date.month - 1).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return date.precision === "month" ? month : new Date(date.year, date.month - 1, date.day).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }

@@ -44,6 +44,38 @@ export interface Note {
   id: string;
   heading: string;
   description: string;
+  groupId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface NoteGroup {
+  id: string;
+  name: string;
+  order: number;
+}
+
+export type ReflectionDate =
+  | { precision: "day"; year: number; month: number; day: number }
+  | { precision: "month"; year: number; month: number }
+  | { precision: "year"; year: number }
+  | { precision: "unknown" };
+
+export interface ReflectionCategory {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  order: number;
+}
+
+export interface Reflection {
+  id: string;
+  categoryId?: string;
+  title: string;
+  content: string;
+  date: ReflectionDate;
+  tags: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -108,6 +140,9 @@ export interface TrackItStore {
   snapshots: DailySnapshot[];
   todos: Todo[];
   notes: Note[];
+  noteGroups?: NoteGroup[];
+  reflections?: Reflection[];
+  reflectionCategories?: ReflectionCategory[];
   habits: Habit[];
   habitEntries: HabitEntry[];
   books: Book[];

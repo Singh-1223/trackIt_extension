@@ -1,187 +1,32 @@
 import { useState } from "react";
-import type { Note } from "../types/index";
+import type { Note, NoteGroup } from "../types/index";
 import { generateId } from "../lib/utils";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 
-interface NotesListProps {
-  notes: Note[];
-  onSave: (updated: Note[]) => Promise<void>;
-}
+interface Props { notes: Note[]; groups: NoteGroup[]; onSave: (notes: Note[]) => Promise<void>; onGroupsSave: (groups: NoteGroup[]) => Promise<void>; }
+const date = (ms: number) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date(ms));
 
-function formatDate(ms: number): string {
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date(ms));
-}
-
-export function NotesList({ notes, onSave }: NotesListProps) {
-  const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
-
-  const [addHeading, setAddHeading] = useState("");
-  const [addDesc, setAddDesc] = useState("");
-
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editHeading, setEditHeading] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-
-  function startEdit(note: Note) {
-    setEditId(note.id);
-    setEditHeading(note.heading);
-    setEditDesc(note.description);
-  }
-
-  function cancelEdit() {
-    setEditId(null);
-    setEditHeading("");
-    setEditDesc("");
-  }
-
-  async function handleAdd() {
-    const heading = addHeading.trim();
-    if (!heading) return;
-    const note: Note = {
-      id: generateId("note"),
-      heading,
-      description: addDesc.trim(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    await onSave([...notes, note]);
-    setAddHeading("");
-    setAddDesc("");
-  }
-
-  async function handleSaveEdit() {
-    if (!editId || !editHeading.trim()) return;
-    await onSave(
-      notes.map((n) =>
-        n.id === editId
-          ? { ...n, heading: editHeading.trim(), description: editDesc.trim(), updatedAt: Date.now() }
-          : n
-      )
-    );
-    cancelEdit();
-  }
-
-  async function handleDelete(id: string) {
-    if (!window.confirm("Delete this note?")) return;
-    await onSave(notes.filter((n) => n.id !== id));
-  }
-
-  return (
-    <div>
-      {sorted.length === 0 ? (
-        <div className="empty" style={{ marginBottom: 12 }}>No notes yet. Add one below.</div>
-      ) : (
-        <div style={{ marginBottom: 8 }}>
-          {sorted.map((note) => (
-            <details key={note.id} className="todo-done-details" style={{ marginBottom: 8 }}>
-              <summary style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontWeight: 500 }}>{note.heading}</span>
-                <span className="todo-created-at" style={{ marginLeft: "auto", flexShrink: 0 }}>
-                  {formatDate(note.updatedAt)}
-                </span>
-              </summary>
-
-              <div style={{ padding: "10px 4px 4px" }}>
-                {editId === note.id ? (
-                  <div className="todo-edit-form">
-                    <input
-                      className="add-task-input"
-                      value={editHeading}
-                      autoFocus
-                      placeholder="Heading"
-                      onChange={(e) => setEditHeading(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") void handleSaveEdit();
-                        if (e.key === "Escape") cancelEdit();
-                      }}
-                    />
-                    <textarea
-                      placeholder="Description (optional)"
-                      value={editDesc}
-                      rows={4}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                    />
-                    <div className="todo-add-row">
-                      <button
-                        type="button"
-                        className="button button-primary"
-                        style={{ padding: "7px 14px", fontSize: "0.82rem" }}
-                        onClick={() => void handleSaveEdit()}
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        className="button button-secondary"
-                        style={{ padding: "7px 14px", fontSize: "0.82rem" }}
-                        onClick={cancelEdit}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {note.description && (
-                      <div style={{ marginBottom: 10 }}>
-                        <MarkdownRenderer content={note.description} />
-                      </div>
-                    )}
-                    {!note.description && (
-                      <p className="muted" style={{ fontSize: "0.82rem", marginBottom: 10 }}>No description.</p>
-                    )}
-                    <div className="todo-actions">
-                      <button
-                        type="button"
-                        className="button button-secondary"
-                        style={{ padding: "6px 12px", fontSize: "0.78rem" }}
-                        onClick={() => startEdit(note)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="button button-danger"
-                        style={{ padding: "6px 12px", fontSize: "0.78rem" }}
-                        onClick={() => void handleDelete(note.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </details>
-          ))}
-        </div>
-      )}
-
-      {/* Add form */}
-      <div className="todo-add-form">
-        <div className="todo-add-row">
-          <input
-            className="add-task-input"
-            placeholder="Note heading…"
-            value={addHeading}
-            onChange={(e) => setAddHeading(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") void handleAdd(); }}
-            style={{ flex: 1 }}
-          />
-          <button
-            type="button"
-            className="button button-primary"
-            onClick={() => void handleAdd()}
-          >
-            Add
-          </button>
-        </div>
-        <textarea
-          placeholder="Description (optional)"
-          value={addDesc}
-          rows={3}
-          onChange={(e) => setAddDesc(e.target.value)}
-        />
+export function NotesList({ notes, groups, onSave, onGroupsSave }: Props) {
+  const ordered = [...groups].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  const [groupName, setGroupName] = useState("");
+  const [heading, setHeading] = useState(""); const [description, setDescription] = useState(""); const [groupId, setGroupId] = useState("");
+  const [edit, setEdit] = useState<Note | null>(null); const [editHeading, setEditHeading] = useState(""); const [editDescription, setEditDescription] = useState(""); const [editGroupId, setEditGroupId] = useState("");
+  const [renaming, setRenaming] = useState<string | null>(null); const [renameValue, setRenameValue] = useState("");
+  const beginEdit = (note: Note) => { setEdit(note); setEditHeading(note.heading); setEditDescription(note.description); setEditGroupId(note.groupId ?? ""); };
+  const addGroup = async () => { const name = groupName.trim(); if (!name || ordered.some((g) => g.name.toLowerCase() === name.toLowerCase())) return; const group = { id: generateId("ngrp"), name, order: ordered.length }; await onGroupsSave([...groups, group]); setGroupId(group.id); setGroupName(""); };
+  const renameGroup = async (id: string) => { const name = renameValue.trim(); if (!name) return; await onGroupsSave(groups.map((group) => group.id === id ? { ...group, name } : group)); setRenaming(null); };
+  const deleteGroup = async (id: string) => { if (!window.confirm("Delete this group? Its notes will move to Unsorted.")) return; await onSave(notes.map((note) => note.groupId === id ? { ...note, groupId: undefined, updatedAt: Date.now() } : note)); await onGroupsSave(groups.filter((group) => group.id !== id)); };
+  const addNote = async () => { const title = heading.trim(); if (!title) return; await onSave([...notes, { id: generateId("note"), heading: title, description: description.trim(), groupId: groupId || undefined, createdAt: Date.now(), updatedAt: Date.now() }]); setHeading(""); setDescription(""); setGroupId(""); };
+  const saveEdit = async () => { if (!edit || !editHeading.trim()) return; await onSave(notes.map((note) => note.id === edit.id ? { ...note, heading: editHeading.trim(), description: editDescription.trim(), groupId: editGroupId || undefined, updatedAt: Date.now() } : note)); setEdit(null); };
+  const sections = [...ordered.map((group) => ({ id: group.id, name: group.name, group })), { id: "", name: "Unsorted", group: undefined }].map((section) => ({ ...section, notes: notes.filter((note) => (note.groupId ?? "") === section.id).sort((a, b) => b.updatedAt - a.updatedAt) }));
+  return <div>
+    {sections.map((section) => <details key={section.id || "unsorted"} className="group-accordion" open={section.notes.length > 0} style={{ marginBottom: 8 }}>
+      <summary className="group-accordion-summary"><span className="group-accordion-chevron" aria-hidden="true" /><span className="group-accordion-name">{section.name}</span><span className="group-progress-badge">{section.notes.length}</span></summary>
+      <div className="group-task-list" style={{ paddingTop: 4 }}>
+        {section.group && <div className="todo-actions" style={{ padding: "0 2px 8px" }}>{renaming === section.id ? <><input className="add-task-input" value={renameValue} onChange={(event) => setRenameValue(event.target.value)} /><button type="button" className="button button-primary" onClick={() => void renameGroup(section.id)}>Save name</button><button type="button" className="button button-secondary" onClick={() => setRenaming(null)}>Cancel</button></> : <><button type="button" className="button button-secondary" onClick={() => { setRenaming(section.id); setRenameValue(section.name); }}>Rename group</button><button type="button" className="button button-danger" onClick={() => void deleteGroup(section.id)}>Delete group</button></>}</div>}
+        {section.notes.length === 0 ? <p className="muted" style={{ padding: "2px 2px 8px", fontSize: "0.84rem" }}>No notes in this group.</p> : section.notes.map((note) => <details key={note.id} className="todo-done-details" style={{ marginBottom: 8 }}><summary style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontWeight: 500 }}>{note.heading}</span><span className="todo-created-at">{date(note.updatedAt)}</span></summary><div style={{ padding: "10px 4px 4px" }}>{edit?.id === note.id ? <div className="todo-edit-form"><input className="add-task-input" value={editHeading} onChange={(event) => setEditHeading(event.target.value)} autoFocus /><select value={editGroupId} onChange={(event) => setEditGroupId(event.target.value)}><option value="">Unsorted</option>{ordered.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select><textarea value={editDescription} rows={4} onChange={(event) => setEditDescription(event.target.value)} /><div className="todo-add-row"><button type="button" className="button button-primary" onClick={() => void saveEdit()}>Save</button><button type="button" className="button button-secondary" onClick={() => setEdit(null)}>Cancel</button></div></div> : <>{note.description ? <div style={{ marginBottom: 10 }}><MarkdownRenderer content={note.description} /></div> : <p className="muted">No description.</p>}<div className="todo-actions"><button type="button" className="button button-secondary" onClick={() => beginEdit(note)}>Edit / move</button><button type="button" className="button button-danger" onClick={() => void onSave(notes.filter((item) => item.id !== note.id))}>Delete</button></div></>}</div></details>)}
       </div>
-    </div>
-  );
+    </details>)}
+    <div className="todo-add-form"><div className="todo-add-row"><input className="add-task-input" placeholder="New group name…" value={groupName} onChange={(event) => setGroupName(event.target.value)} /><button type="button" className="button button-secondary" onClick={() => void addGroup()}>Add group</button></div><div className="todo-add-row"><input className="add-task-input" placeholder="Note heading…" value={heading} onChange={(event) => setHeading(event.target.value)} /><select value={groupId} onChange={(event) => setGroupId(event.target.value)}><option value="">Unsorted</option>{ordered.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select><button type="button" className="button button-primary" onClick={() => void addNote()}>Add note</button></div><textarea placeholder="Description (optional)" value={description} rows={3} onChange={(event) => setDescription(event.target.value)} /></div>
+  </div>;
 }

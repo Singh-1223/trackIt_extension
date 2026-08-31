@@ -6,6 +6,12 @@ import { pruneOldEntries, pruneOldSnapshots } from "./utils";
 const STORAGE_KEY = "trackit.store";
 const SCHEMA_VERSION = 1;
 
+const DEFAULT_REFLECTION_CATEGORIES = [
+  { id: "reflection-daily", name: "Daily Reflections", icon: "sunny", color: "#fbe6dc", order: 0 },
+  { id: "reflection-gratitude", name: "Gratitude / Grace", icon: "heart", color: "#fce7d7", order: 1 },
+  { id: "reflection-memories", name: "Memories", icon: "sparkles", color: "#eee5fb", order: 2 }
+];
+
 function buildDefaultStore(): TrackItStore {
   const groups: TaskGroup[] = [
     { id: "grp-daily", name: "Daily Goals", order: 0 },
@@ -20,7 +26,7 @@ function buildDefaultStore(): TrackItStore {
     { id: "task-5", groupId: "grp-habits", title: "Reflect + journal — 5 min", order: 2 }
   ];
 
-  return { groups, tasks, entries: [], snapshots: [], todos: [], notes: [], habits: [], habitEntries: [], books: [], schemaVersion: SCHEMA_VERSION, updatedAt: Date.now() };
+  return { groups, tasks, entries: [], snapshots: [], todos: [], notes: [], noteGroups: [], reflections: [], reflectionCategories: DEFAULT_REFLECTION_CATEGORIES, habits: [], habitEntries: [], books: [], schemaVersion: SCHEMA_VERSION, updatedAt: Date.now() };
 }
 
 function chromeGet(key: string): Promise<Record<string, unknown>> {
@@ -54,6 +60,23 @@ export async function getStore(): Promise<TrackItStore> {
   }
 
   const stored = raw as TrackItStore;
+  // Migrate reflection data. Categories are seeded for older installs so new
+  // entries always have a meaningful space to choose from.
+  if (!Array.isArray(stored.reflections) || !Array.isArray(stored.reflectionCategories) || stored.reflectionCategories.length === 0) {
+    const migrated = {
+      ...stored,
+      reflections: Array.isArray(stored.reflections) ? stored.reflections : [],
+      reflectionCategories: Array.isArray(stored.reflectionCategories) && stored.reflectionCategories.length > 0 ? stored.reflectionCategories : DEFAULT_REFLECTION_CATEGORIES
+    };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
+  // Rename only the shipped default; do not overwrite a user's own rename.
+  if (stored.reflectionCategories.some((category) => category.id === "reflection-daily" && category.name === "Today")) {
+    const migrated = { ...stored, reflectionCategories: stored.reflectionCategories.map((category) => category.id === "reflection-daily" && category.name === "Today" ? { ...category, name: "Daily Reflections" } : category) };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
   // Migrate: add todos array if missing (existing installs before this feature)
   if (!Array.isArray(stored.todos)) {
     const migrated = { ...stored, todos: [] };
@@ -63,6 +86,12 @@ export async function getStore(): Promise<TrackItStore> {
   // Migrate: add notes array if missing
   if (!Array.isArray(stored.notes)) {
     const migrated = { ...stored, notes: [] };
+    await chromeSet({ [STORAGE_KEY]: migrated });
+    return migrated;
+  }
+  // Migrate: add note groups array if missing
+  if (!Array.isArray(stored.noteGroups)) {
+    const migrated = { ...stored, noteGroups: [] };
     await chromeSet({ [STORAGE_KEY]: migrated });
     return migrated;
   }

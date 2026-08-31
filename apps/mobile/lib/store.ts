@@ -4,6 +4,11 @@ import { pruneOldEntries, pruneOldSnapshots } from "./utils";
 
 const STORAGE_KEY = "trackit.store";
 const SCHEMA_VERSION = 1;
+const DEFAULT_REFLECTION_CATEGORIES = [
+  { id: "reflection-daily", name: "Daily Reflections", icon: "sunny", color: "#fbe6dc", order: 0 },
+  { id: "reflection-gratitude", name: "Gratitude / Grace", icon: "heart", color: "#fce7d7", order: 1 },
+  { id: "reflection-memories", name: "Memories", icon: "sparkles", color: "#eee5fb", order: 2 },
+];
 
 export function buildDefaultStore(): TrackItStore {
   return {
@@ -22,6 +27,9 @@ export function buildDefaultStore(): TrackItStore {
     snapshots: [],
     todos: [],
     notes: [],
+    noteGroups: [],
+    reflections: [],
+    reflectionCategories: DEFAULT_REFLECTION_CATEGORIES,
     habits: [],
     habitEntries: [],
     books: [],
@@ -34,6 +42,13 @@ function migrate(raw: TrackItStore): TrackItStore {
   let s = { ...raw };
   if (!Array.isArray(s.todos)) s = { ...s, todos: [] };
   if (!Array.isArray(s.notes)) s = { ...s, notes: [] };
+  if (!Array.isArray(s.noteGroups)) s = { ...s, noteGroups: [] };
+  if (!Array.isArray(s.reflections)) s = { ...s, reflections: [] };
+  if (!Array.isArray(s.reflectionCategories) || s.reflectionCategories.length === 0) s = { ...s, reflectionCategories: DEFAULT_REFLECTION_CATEGORIES };
+  // Rename only the original seeded category; user-renamed spaces stay untouched.
+  if (s.reflectionCategories?.some((category) => category.id === "reflection-daily" && category.name === "Today")) {
+    s = { ...s, reflectionCategories: s.reflectionCategories.map((category) => category.id === "reflection-daily" && category.name === "Today" ? { ...category, name: "Daily Reflections" } : category) };
+  }
   if (!Array.isArray(s.habits)) s = { ...s, habits: [] };
   if (!Array.isArray(s.habitEntries)) s = { ...s, habitEntries: [] };
   if (!Array.isArray(s.books)) s = { ...s, books: [] };
@@ -142,6 +157,9 @@ export function hasUserModifications(store: TrackItStore): boolean {
   if (store.notes.length > 0) return true;
   if (store.habits.length > 0) return true;
   if (store.habitEntries.length > 0) return true;
+  if ((store.reflections?.length ?? 0) > 0) return true;
+  // Categories are user data too: retain a locally created space when first syncing.
+  if ((store.reflectionCategories?.length ?? 0) > DEFAULT_REFLECTION_CATEGORIES.length) return true;
 
   const defaultGroupIds = new Set(["grp-daily", "grp-habits"]);
   if (store.groups.length !== 2) return true;
