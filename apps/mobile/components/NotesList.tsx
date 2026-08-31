@@ -13,12 +13,14 @@ import {
 } from "react-native";
 import { generateId } from "../lib/utils";
 import { colors, fontSize, radius, spacing } from "../theme";
-import type { Note } from "../types/index";
+import type { Note, NoteGroup } from "../types/index";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface NotesListProps {
   notes: Note[];
   onSave: (updated: Note[]) => void;
+  groups?: NoteGroup[];
+  onGroupsSave?: (updated: NoteGroup[]) => void;
   hideAddForm?: boolean;
 }
 
@@ -82,8 +84,39 @@ function NoteCard({
   );
 }
 
-export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps) {
+function NoteGroupAccordion({
+  name,
+  notes,
+  onEdit,
+  onDelete,
+}: {
+  name: string;
+  notes: Note[];
+  onEdit: (note: Note) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={s.noteGroup}>
+      <TouchableOpacity style={s.noteGroupHeader} onPress={() => setOpen((value) => !value)} activeOpacity={0.75}>
+        <Text style={s.groupChevron}>{open ? "⌄" : "›"}</Text>
+        <Text style={s.noteGroupName}>{name}</Text>
+        <View style={s.noteGroupCount}><Text style={s.noteGroupCountText}>{notes.length}</Text></View>
+      </TouchableOpacity>
+      {open && (
+        <View style={s.noteGroupBody}>
+          {notes.length === 0 ? <Text style={s.groupEmpty}>No notes in this group yet.</Text> : notes.map((note) => (
+            <NoteCard key={note.id} note={note} onEdit={onEdit} onDelete={onDelete} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+export function NotesList({ notes, onSave, groups = [], hideAddForm = false }: NotesListProps) {
   const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
+  const orderedGroups = [...groups].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
 
   const [addHeading, setAddHeading] = useState("");
   const [addDesc, setAddDesc] = useState("");
@@ -91,10 +124,12 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
   const [editId, setEditId] = useState<string | null>(null);
   const [editHeading, setEditHeading] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editGroupId, setEditGroupId] = useState("");
   function startEdit(note: Note) {
     setEditId(note.id);
     setEditHeading(note.heading);
     setEditDesc(note.description);
+    setEditGroupId(note.groupId ?? "");
   }
 
   function cancelEdit() {
@@ -121,7 +156,7 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
     onSave(
       notes.map((n) =>
         n.id === editId
-          ? { ...n, heading: editHeading.trim(), description: editDesc.trim(), updatedAt: Date.now() }
+          ? { ...n, heading: editHeading.trim(), description: editDesc.trim(), groupId: editGroupId || undefined, updatedAt: Date.now() }
           : n
       )
     );
@@ -137,22 +172,24 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
 
   return (
     <View>
-      {sorted.length === 0 && (
-        <Text style={s.empty}>No notes yet. Add one below.</Text>
+      {sorted.length === 0 && <Text style={s.empty}>No notes yet. Add one below.</Text>}
+      {orderedGroups.map((group) => (
+        <NoteGroupAccordion
+          key={group.id}
+          name={group.name}
+          notes={sorted.filter((note) => note.groupId === group.id)}
+          onEdit={startEdit}
+          onDelete={handleDelete}
+        />
+      ))}
+      {(sorted.some((note) => !note.groupId) || orderedGroups.length === 0) && (
+        <NoteGroupAccordion
+          name="Unsorted"
+          notes={sorted.filter((note) => !note.groupId)}
+          onEdit={startEdit}
+          onDelete={handleDelete}
+        />
       )}
-
-      {sorted.map((note) => {
-        const isEditing = editId === note.id;
-
-        return (
-          <NoteCard
-            key={note.id}
-            note={note}
-            onEdit={startEdit}
-            onDelete={handleDelete}
-          />
-        );
-      })}
 
       {/* Edit Note Modal */}
       <Modal visible={editId !== null} animationType="slide" transparent onRequestClose={cancelEdit}>
@@ -165,6 +202,11 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
               </TouchableOpacity>
             </View>
             <TextInput style={s.input} value={editHeading} onChangeText={setEditHeading} placeholder="Heading" placeholderTextColor={colors.inkSoft} autoFocus />
+            <Text style={s.groupLabel}>Group</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.groupPicker}>
+              <TouchableOpacity style={[s.groupChip, !editGroupId && s.groupChipActive]} onPress={() => setEditGroupId("")}><Text style={[s.groupChipText, !editGroupId && s.groupChipTextActive]}>Unsorted</Text></TouchableOpacity>
+              {groups.map((group) => <TouchableOpacity key={group.id} style={[s.groupChip, editGroupId === group.id && s.groupChipActive]} onPress={() => setEditGroupId(group.id)}><Text style={[s.groupChipText, editGroupId === group.id && s.groupChipTextActive]}>{group.name}</Text></TouchableOpacity>)}
+            </ScrollView>
             <TextInput style={[s.input, s.textarea]} value={editDesc} onChangeText={setEditDesc} placeholder="Description (optional)" placeholderTextColor={colors.inkSoft} multiline scrollEnabled />
             <TouchableOpacity style={s.primaryBtn} onPress={handleSaveEdit}>
               <Text style={s.primaryBtnText}>Save</Text>
@@ -204,6 +246,14 @@ export function NotesList({ notes, onSave, hideAddForm = false }: NotesListProps
 
 const s = StyleSheet.create({
   empty: { fontSize: fontSize.sm, color: colors.inkSoft, marginBottom: spacing.sm },
+  noteGroup: { backgroundColor: colors.surfaceStrong, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm, overflow: "hidden" },
+  noteGroupHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.xs },
+  groupChevron: { width: 16, fontSize: 22, lineHeight: 20, color: colors.inkSoft, textAlign: "center" },
+  noteGroupName: { flex: 1, fontSize: fontSize.base, fontWeight: "800", color: colors.ink },
+  noteGroupCount: { minWidth: 24, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99, backgroundColor: colors.bg, alignItems: "center" },
+  noteGroupCountText: { color: colors.inkSoft, fontWeight: "700", fontSize: fontSize.xs },
+  noteGroupBody: { padding: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  groupEmpty: { color: colors.inkSoft, fontSize: fontSize.sm, paddingTop: spacing.sm },
   noteCard: {
     backgroundColor: colors.surfaceStrong,
     borderRadius: radius.sm,
@@ -239,6 +289,12 @@ const s = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   textarea: { minHeight: 160, maxHeight: 360, textAlignVertical: "top" },
+  groupLabel: { fontSize: fontSize.xs, color: colors.inkSoft, fontWeight: "700", marginBottom: spacing.xs },
+  groupPicker: { marginBottom: spacing.sm },
+  groupChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 99, paddingHorizontal: spacing.sm, paddingVertical: 6, marginRight: spacing.xs },
+  groupChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  groupChipText: { color: colors.inkSoft, fontSize: fontSize.xs, fontWeight: "700" },
+  groupChipTextActive: { color: colors.white },
   saveBtn: { backgroundColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 5 },
   saveBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: "700" },
   cancelBtn: { backgroundColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 5 },

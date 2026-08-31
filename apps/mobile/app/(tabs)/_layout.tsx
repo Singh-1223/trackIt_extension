@@ -35,6 +35,14 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
+            title: "Home",
+            tabBarLabel: "Home",
+            tabBarIcon: tabIcon("home-outline", "home"),
+          }}
+        />
+        <Tabs.Screen
+          name="today"
+          options={{
             title: "Today",
             tabBarLabel: "Today",
             tabBarIcon: tabIcon("sunny-outline", "sunny"),
@@ -43,49 +51,38 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="todos"
           options={{
-            title: "To-Dos",
-            tabBarLabel: "To-Dos",
-            tabBarIcon: tabIcon("checkmark-circle-outline", "checkmark-circle"),
+            href: null,
           }}
         />
         <Tabs.Screen
           name="habits"
           options={{
-            title: "Build-Up",
-            tabBarLabel: "Build-Up",
-            tabBarIcon: tabIcon("flame-outline", "flame"),
+            href: null,
           }}
         />
         <Tabs.Screen
           name="library"
           options={{
-            title: "Library",
-            tabBarLabel: "Library",
-            tabBarIcon: tabIcon("book-outline", "book"),
+            href: null,
           }}
         />
         <Tabs.Screen
           name="notes"
           options={{
-            title: "Notes",
-            tabBarLabel: "Notes",
-            tabBarIcon: tabIcon("document-text-outline", "document-text"),
+            href: null,
           }}
         />
+        <Tabs.Screen name="reflections" options={{ href: null }} />
         <Tabs.Screen
           name="history"
           options={{
-            title: "History",
-            tabBarLabel: "History",
-            tabBarIcon: tabIcon("time-outline", "time"),
+            href: null,
           }}
         />
         <Tabs.Screen
           name="manage"
           options={{
-            title: "Tasks",
-            tabBarLabel: "Daily Grind",
-            tabBarIcon: tabIcon("settings-outline", "settings"),
+            href: null,
           }}
         />
       </Tabs>
