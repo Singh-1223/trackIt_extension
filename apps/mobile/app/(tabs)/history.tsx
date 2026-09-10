@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppLoader } from "../../components/AppLoader";
 import { HistoryView } from "../../components/HistoryView";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
@@ -7,11 +8,7 @@ export default function HistoryScreen() {
   const { store, loading } = useStoreContext();
 
   if (loading || !store) {
-    return (
-      <View style={s.center}>
-        <Text style={s.muted}>Loading…</Text>
-      </View>
-    );
+    return <AppLoader />;
   }
 
   return (

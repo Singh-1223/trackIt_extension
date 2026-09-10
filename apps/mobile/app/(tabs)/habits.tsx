@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { CalendarPicker } from "../../components/CalendarPicker";
 import { DatePickerTrigger } from "../../components/DatePickerTrigger";
+import { AppLoader } from "../../components/AppLoader";
 import { HabitView } from "../../components/HabitView";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { computeDayCount } from "../../lib/calendarUtils";
@@ -21,11 +22,7 @@ export default function HabitsScreen() {
   const [showEndPicker, setShowEndPicker] = useState(false);
 
   if (loading || !store) {
-    return (
-      <View style={s.center}>
-        <Text style={s.muted}>Loading…</Text>
-      </View>
-    );
+    return <AppLoader />;
   }
 
   function handleAdd() {

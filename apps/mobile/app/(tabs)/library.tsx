@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { AppLoader } from "../../components/AppLoader";
 import { LibraryView } from "../../components/LibraryView";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { generateId } from "../../lib/utils";
@@ -23,11 +24,7 @@ export default function LibraryScreen() {
   const [formError, setFormError] = useState("");
 
   if (loading || !store) {
-    return (
-      <View style={s.center}>
-        <Text style={s.muted}>Loading…</Text>
-      </View>
-    );
+    return <AppLoader />;
   }
 
   function handleAdd() {

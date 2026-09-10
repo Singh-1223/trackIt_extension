@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { CalendarPicker } from "../../components/CalendarPicker";
 import { DatePickerTrigger } from "../../components/DatePickerTrigger";
+import { AppLoader } from "../../components/AppLoader";
 import { TodoList } from "../../components/TodoList";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { generateId, getTodayString } from "../../lib/utils";
@@ -19,11 +20,7 @@ export default function TodosScreen() {
   const [showDuePicker, setShowDuePicker] = useState(false);
 
   if (loading || !store) {
-    return (
-      <View style={s.center}>
-        <Text style={s.muted}>Loading…</Text>
-      </View>
-    );
+    return <AppLoader />;
   }
 
   function handleAdd() {

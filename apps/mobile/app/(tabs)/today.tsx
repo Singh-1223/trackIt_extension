@@ -1,6 +1,7 @@
 import { useAuth } from "@clerk/clerk-expo";
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppLoader } from "../../components/AppLoader";
 import { GroupSection } from "../../components/GroupSection";
 import { HabitView } from "../../components/HabitView";
 import { SyncStatusIndicator } from "../../components/SyncStatusIndicator";
@@ -22,11 +23,7 @@ export default function TodayScreen() {
   const { signOut } = useAuth();
 
   if (loading || !store) {
-    return (
-      <View style={s.center}>
-        <Text style={s.muted}>Loading…</Text>
-      </View>
-    );
+    return <AppLoader />;
   }
 
   const sortedGroups = [...store.groups].sort((a, b) => a.order - b.order);

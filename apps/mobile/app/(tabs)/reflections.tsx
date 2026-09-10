@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useStoreContext } from "../../hooks/StoreContext";
+import { AppLoader } from "../../components/AppLoader";
 import { MarkdownRenderer } from "../../components/MarkdownRenderer";
 import { generateId } from "../../lib/utils";
 import { colors, fontSize, radius, spacing, TOP_PADDING } from "../../theme";
@@ -69,7 +70,7 @@ export default function ReflectionsScreen() {
     if (store && !store.reflectionCategories?.length) void save({ ...store, reflectionCategories: DEFAULT_CATEGORIES });
   }, [store, save]);
 
-  if (loading || !store) return <View style={s.center}><Text>Loading…</Text></View>;
+  if (loading || !store) return <AppLoader />;
 
   const openComposer = (entry?: Reflection) => {
     const baseDate = entry?.date ?? { precision: "day" as const, year: today.getFullYear(), month: today.getMonth() + 1, day: today.getDate() };

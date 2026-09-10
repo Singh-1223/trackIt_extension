@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { AppLoader } from "../../components/AppLoader";
 import { TaskManager } from "../../components/TaskManager";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { generateId } from "../../lib/utils";
@@ -12,11 +13,7 @@ export default function ManageScreen() {
   const [groupName, setGroupName] = useState("");
 
   if (loading || !store) {
-    return (
-      <View style={s.center}>
-        <Text style={s.muted}>Loading…</Text>
-      </View>
-    );
+    return <AppLoader />;
   }
 
   function handleAddGroup() {

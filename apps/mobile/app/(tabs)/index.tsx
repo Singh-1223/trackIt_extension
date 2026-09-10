@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/clerk-expo";
 import { type Href, useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppLoader } from "../../components/AppLoader";
 import { SyncStatusIndicator } from "../../components/SyncStatusIndicator";
 import { useStoreContext } from "../../hooks/StoreContext";
 import { colors, fontSize, radius, shadow, spacing, TOP_PADDING } from "../../theme";
@@ -17,16 +19,28 @@ type Feature = {
 };
 
 export default function HomeScreen() {
-  const { store, loading, error, syncStatus } = useStoreContext();
+  const { store, loading, error, syncStatus, refresh, refreshing } = useStoreContext();
   const { signOut } = useAuth();
   const router = useRouter();
+  const spin = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (refreshing) {
+      const loop = Animated.loop(
+        Animated.timing(spin, { toValue: 1, duration: 800, easing: Easing.linear, useNativeDriver: true })
+      );
+      loop.start();
+      return () => {
+        loop.stop();
+        spin.setValue(0);
+      };
+    }
+  }, [refreshing, spin]);
+
+  const spinDeg = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
 
   if (loading || !store) {
-    return (
-      <View style={s.center}>
-        <Text style={s.muted}>Loading…</Text>
-      </View>
-    );
+    return <AppLoader />;
   }
 
   const pendingTodos = store.todos.filter((todo) => !todo.done).length;
@@ -106,6 +120,16 @@ export default function HomeScreen() {
           <Text style={s.brand}>TrackIt</Text>
           <View style={s.headerActions}>
             <SyncStatusIndicator status={syncStatus} />
+            <TouchableOpacity
+              onPress={() => refresh()}
+              disabled={refreshing}
+              accessibilityLabel="Refresh data"
+              style={s.signOutBtn}
+            >
+              <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
+                <Ionicons name="refresh-outline" size={19} color={colors.inkSoft} />
+              </Animated.View>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => signOut()} accessibilityLabel="Sign out" style={s.signOutBtn}>
               <Ionicons name="log-out-outline" size={19} color={colors.inkSoft} />
             </TouchableOpacity>
