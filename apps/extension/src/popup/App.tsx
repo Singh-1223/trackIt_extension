@@ -9,6 +9,7 @@ import { SyncStatusIndicator } from "../components/SyncStatusIndicator";
 import { AuthProvider, useAuthContext } from "../lib/auth/AuthProvider";
 import { useStartupSync } from "../lib/sync/startupSync";
 import { getSyncEngine } from "../lib/sync/syncEngineInstance";
+import { lastWriteWins } from "../lib/sync/syncEngine";
 import { ensureSnapshot, getStore, openOptionsPage, saveStore, sortedTodos, upsertEntry } from "../lib/store";
 import { formatDateLabel, getLastNDays, getTodayString } from "../lib/utils";
 import type { SyncStatus } from "../lib/sync/syncEngine";
@@ -71,6 +72,8 @@ function AppContent() {
     startupStatus === "error" ? "error" :
     syncStatus;
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const loadStore = useCallback(async () => {
     try {
       const s = await getStore();
@@ -79,6 +82,39 @@ function AppContent() {
       setError(e instanceof Error ? e.message : "Failed to load.");
     }
   }, []);
+
+  // Manual refresh: pull the latest remote store and reconcile with local via
+  // last-write-wins, then persist locally. No-op when not signed in.
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setError("");
+    try {
+      if (isSignedIn) {
+        const engine = getSyncEngine();
+        const remote = await engine.pull();
+        const local = await getStore();
+        if (remote) {
+          const winner = lastWriteWins(local, remote);
+          if (winner === remote) {
+            await saveStore(remote);
+            setStore(remote);
+          } else {
+            await engine.push(local);
+            setStore(local);
+          }
+        } else {
+          setStore(local);
+        }
+      } else {
+        await loadStore();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Refresh failed.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshing, isSignedIn, loadStore]);
 
   useEffect(() => {
     void loadStore();
@@ -158,6 +194,29 @@ function AppContent() {
           <span className="hero-badge">TrackIt</span>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {isSignedIn && <SyncStatusIndicator status={effectiveSyncStatus} />}
+            <button
+              type="button"
+              className="refresh-button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label="Refresh data"
+              title="Refresh data"
+            >
+              <svg
+                className={refreshing ? "refresh-icon is-spinning" : "refresh-icon"}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="15"
+                height="15"
+              >
+                <path d="M23 4v6h-6" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+            </button>
             <span className="muted" style={{ fontSize: "0.78rem" }}>{TODAY}</span>
           </div>
         </div>

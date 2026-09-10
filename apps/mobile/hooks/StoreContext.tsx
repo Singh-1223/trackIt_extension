@@ -8,6 +8,8 @@ export interface StoreContextValue {
   error: string;
   syncStatus: SyncStatus;
   save: (updated: TrackItStore) => void;
+  refresh: () => Promise<void>;
+  refreshing: boolean;
 }
 
 export const StoreContext = createContext<StoreContextValue>({
@@ -16,6 +18,8 @@ export const StoreContext = createContext<StoreContextValue>({
   error: "",
   syncStatus: "idle",
   save: () => {},
+  refresh: async () => {},
+  refreshing: false,
 });
 
 export function useStoreContext(): StoreContextValue {

@@ -1990,3 +1990,42 @@ details[open] .buildup-habit-chevron {
 .reflection-tags { display: flex; flex-wrap: wrap; gap: 7px; }
 .reflection-tags span { color: var(--accent-strong); background: var(--accent-soft); padding: 4px 8px; border-radius: 99px; font-size: .78rem; font-weight: 700; }
 @media (max-width: 640px) { .reflections-heading, .reflection-entry { align-items: stretch; flex-direction: column; } .reflection-entry .todo-actions { justify-content: flex-start; } }
+
+/* Manual refresh button in the popup hero */
+.refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.refresh-button:hover:not(:disabled) {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+}
+
+.refresh-button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.refresh-icon {
+  display: block;
+}
+
+.refresh-icon.is-spinning {
+  animation: refresh-spin 0.8s linear infinite;
+}
+
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

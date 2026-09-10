@@ -1,5 +1,5 @@
 import { useAuth } from "@clerk/clerk-expo";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchStore, pushStore } from "../lib/api";
 import { hasUserModifications, loadLocalStore, saveLocalStore } from "../lib/store";
 import type { SyncStatus } from "../components/SyncStatusIndicator";
@@ -18,6 +18,7 @@ export function useStore() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
+  const [refreshing, setRefreshing] = useState(false);
   const initialized = useRef(false);
 
   // Debounce state for API pushes
@@ -52,6 +53,49 @@ export function useStore() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Pull the remote store and reconcile it with the local copy using the
+  // last-write-wins / richness heuristics. Shared by initial load and manual refresh.
+  const syncFromRemote = useCallback(async (local: TrackItStore) => {
+    const token = await getTokenRef.current();
+    console.log("[useStore] got token:", token ? "yes" : "null");
+    if (!token) return;
+    setSyncStatus("pulling");
+    const remote = await fetchStore(token);
+    console.log("[useStore] remote store:", remote ? "received" : "null");
+    if (!remote) {
+      setSyncStatus("pushing");
+      await pushStore(token, local);
+      setSyncStatus("idle");
+      return;
+    }
+    const localHasData = hasUserModifications(local);
+    const remoteHasData = hasUserModifications(remote);
+
+    let winner: TrackItStore;
+    if (!localHasData && remoteHasData) {
+      winner = remote;
+    } else if (localHasData && !remoteHasData) {
+      winner = local;
+    } else if (!localHasData && !remoteHasData) {
+      winner = local;
+    } else {
+      const localRichness = (local.tasks?.length ?? 0) + (local.entries?.length ?? 0) + (local.todos?.length ?? 0) + (local.notes?.length ?? 0) + (local.reflections?.length ?? 0);
+      const remoteRichness = (remote.tasks?.length ?? 0) + (remote.entries?.length ?? 0) + (remote.todos?.length ?? 0) + (remote.notes?.length ?? 0) + (remote.reflections?.length ?? 0);
+      if (localRichness !== remoteRichness) {
+        winner = localRichness > remoteRichness ? local : remote;
+      } else {
+        winner = local.updatedAt > remote.updatedAt ? local : remote;
+      }
+    }
+
+    if (winner !== local) {
+      console.log("[useStore] applying remote store");
+      setStore(winner);
+      await saveLocalStore(winner);
+    }
+    setSyncStatus("idle");
+  }, []);
+
   useEffect(() => {
     // Wait until Clerk has confirmed a signed-in session before attempting remote sync.
     // Without this guard, getToken() returns null on first render and remote data is never fetched.
@@ -66,50 +110,7 @@ export function useStore() {
         console.log("[useStore] local store loaded, updatedAt:", local.updatedAt);
         setStore(local);
         setLoading(false);
-
-        const token = await getTokenRef.current();
-        console.log("[useStore] got token:", token ? "yes" : "null");
-        if (!token) return;
-        setSyncStatus("pulling");
-        const remote = await fetchStore(token);
-        console.log("[useStore] remote store:", remote ? "received" : "null");
-        if (remote) {
-          console.log("[useStore] local updatedAt:", local.updatedAt, "remote updatedAt:", remote.updatedAt);
-          console.log("[useStore] remote groups:", remote.groups?.length, "tasks:", remote.tasks?.length, "entries:", remote.entries?.length);
-        }
-        if (!remote) {
-          setSyncStatus("pushing");
-          await pushStore(token, local);
-          setSyncStatus("idle");
-          return;
-        }
-        const localHasData = hasUserModifications(local);
-        const remoteHasData = hasUserModifications(remote);
-        console.log("[useStore] localHasData:", localHasData, "remoteHasData:", remoteHasData, "local.tasks:", local.tasks?.length);
-
-        let winner: TrackItStore;
-        if (!localHasData && remoteHasData) {
-          winner = remote;
-        } else if (localHasData && !remoteHasData) {
-          winner = local;
-        } else if (!localHasData && !remoteHasData) {
-          winner = local;
-        } else {
-          const localRichness = (local.tasks?.length ?? 0) + (local.entries?.length ?? 0) + (local.todos?.length ?? 0) + (local.notes?.length ?? 0) + (local.reflections?.length ?? 0);
-          const remoteRichness = (remote.tasks?.length ?? 0) + (remote.entries?.length ?? 0) + (remote.todos?.length ?? 0) + (remote.notes?.length ?? 0) + (remote.reflections?.length ?? 0);
-          if (localRichness !== remoteRichness) {
-            winner = localRichness > remoteRichness ? local : remote;
-          } else {
-            winner = local.updatedAt > remote.updatedAt ? local : remote;
-          }
-        }
-
-        if (winner !== local) {
-          console.log("[useStore] applying remote store");
-          setStore(winner);
-          await saveLocalStore(winner);
-        }
-        setSyncStatus("idle");
+        await syncFromRemote(local);
       } catch (e) {
         console.log("[useStore] error:", e);
         setError(e instanceof Error ? e.message : "Failed to load store.");
@@ -119,7 +120,34 @@ export function useStore() {
     }
 
     void load();
-  }, [isSignedIn]);
+  }, [isSignedIn, syncFromRemote]);
+
+  // Manual refresh: re-pull the latest remote data on demand (e.g. a refresh button).
+  const refresh = useCallback(async () => {
+    if (!isSignedIn || refreshing) return;
+    setRefreshing(true);
+    setError("");
+    try {
+      // Flush any pending debounced push first so we don't clobber local edits.
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+      if (pendingStore.current) {
+        const s = pendingStore.current;
+        pendingStore.current = null;
+        await flushPush(s);
+      }
+      const local = await loadLocalStore();
+      await syncFromRemote(local);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Refresh failed.");
+      setSyncStatus("error");
+    } finally {
+      setRefreshing(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, refreshing, syncFromRemote]);
 
   function save(updated: TrackItStore) {
     const withTimestamp: TrackItStore = { ...updated, updatedAt: Date.now() };
@@ -140,5 +168,5 @@ export function useStore() {
     }, PUSH_DEBOUNCE_MS);
   }
 
-  return { store, loading, error, syncStatus, save };
+  return { store, loading, error, syncStatus, save, refresh, refreshing };
 }
