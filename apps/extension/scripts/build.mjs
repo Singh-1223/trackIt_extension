@@ -59,7 +59,7 @@ function createBuildOptions(defines) {
     minify: !watchMode,
     platform: "browser",
     sourcemap: watchMode,
-    target: ["chrome114"]
+    target: ["chrome102"]
   };
 }
 

@@ -18,5 +18,5 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:3000 https://track-it-extension-api.vercel.app https://*.clerk.accounts.dev https://accounts.clerk.dev https://clerk-telemetry.com"
   },
-  "minimum_chrome_version": "114"
+  "minimum_chrome_version": "102"
 }
