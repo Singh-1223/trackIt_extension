@@ -73,11 +73,22 @@ type LineBlock =
   | { type: "h1"; content: string }
   | { type: "h2"; content: string }
   | { type: "h3"; content: string }
-  | { type: "bullet"; content: string }
-  | { type: "numbered"; content: string; number: string }
+  | { type: "bullet"; content: string; level: number }
+  | { type: "numbered"; content: string; number: string; level: number }
   | { type: "hr" }
   | { type: "empty" }
   | { type: "paragraph"; content: string };
+
+// Count the indentation level from leading whitespace. Every 2 spaces (or a
+// tab) counts as one nesting level so that indented "- " lines become nested
+// bullets. Levels are capped to keep deeply indented text readable.
+function indentLevel(leading: string): number {
+  let spaces = 0;
+  for (const ch of leading) {
+    spaces += ch === "\t" ? 2 : 1;
+  }
+  return Math.min(Math.floor(spaces / 2), 6);
+}
 
 function parseLine(line: string): LineBlock {
   // Headings
@@ -88,12 +99,17 @@ function parseLine(line: string): LineBlock {
   // Horizontal rule
   if (/^---+\s*$/.test(line)) return { type: "hr" };
 
-  // Bullet points
-  if (/^[-*]\s+/.test(line)) return { type: "bullet", content: line.replace(/^[-*]\s+/, "") };
+  // Bullet points (support leading indentation for nesting)
+  const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
+  if (bulletMatch) {
+    return { type: "bullet", content: bulletMatch[2], level: indentLevel(bulletMatch[1]) };
+  }
 
-  // Numbered list
-  const numMatch = line.match(/^(\d+)\.\s+(.*)$/);
-  if (numMatch) return { type: "numbered", content: numMatch[2], number: numMatch[1] };
+  // Numbered list (support leading indentation for nesting)
+  const numMatch = line.match(/^(\s*)(\d+)\.\s+(.*)$/);
+  if (numMatch) {
+    return { type: "numbered", content: numMatch[3], number: numMatch[2], level: indentLevel(numMatch[1]) };
+  }
 
   // Empty line
   if (line.trim() === "") return { type: "empty" };
@@ -101,6 +117,9 @@ function parseLine(line: string): LineBlock {
   // Regular paragraph
   return { type: "paragraph", content: line };
 }
+
+// Bullet markers cycle by depth so nested levels are visually distinct.
+const BULLET_MARKERS = ["•", "◦", "▪"];
 
 export function MarkdownRenderer({ content, selectable = true }: MarkdownRendererProps) {
   if (!content) return null;
@@ -136,8 +155,10 @@ export function MarkdownRenderer({ content, selectable = true }: MarkdownRendere
             return <View key={i} style={s.emptyLine} />;
           case "bullet":
             return (
-              <View key={i} style={s.listRow}>
-                <Text selectable={selectable} style={s.bullet}>•</Text>
+              <View key={i} style={[s.listRow, { paddingLeft: spacing.sm + block.level * spacing.lg }]}>
+                <Text selectable={selectable} style={s.bullet}>
+                  {BULLET_MARKERS[block.level % BULLET_MARKERS.length]}
+                </Text>
                 <View style={s.listContent}>
                   <InlineText segments={parseInline(block.content)} selectable={selectable} />
                 </View>
@@ -145,7 +166,7 @@ export function MarkdownRenderer({ content, selectable = true }: MarkdownRendere
             );
           case "numbered":
             return (
-              <View key={i} style={s.listRow}>
+              <View key={i} style={[s.listRow, { paddingLeft: spacing.sm + block.level * spacing.lg }]}>
                 <Text selectable={selectable} style={s.bullet}>{block.number}.</Text>
                 <View style={s.listContent}>
                   <InlineText segments={parseInline(block.content)} selectable={selectable} />

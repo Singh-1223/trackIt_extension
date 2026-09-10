@@ -74,11 +74,21 @@ type LineBlock =
   | { type: "h1"; content: string }
   | { type: "h2"; content: string }
   | { type: "h3"; content: string }
-  | { type: "bullet"; content: string }
-  | { type: "numbered"; content: string; number: string }
+  | { type: "bullet"; content: string; level: number }
+  | { type: "numbered"; content: string; number: string; level: number }
   | { type: "hr" }
   | { type: "empty" }
   | { type: "paragraph"; content: string };
+
+// Count the indentation level from leading whitespace. Every 2 spaces (or a
+// tab) counts as one nesting level so indented "- " lines become nested bullets.
+function indentLevel(leading: string): number {
+  let spaces = 0;
+  for (const ch of leading) {
+    spaces += ch === "\t" ? 2 : 1;
+  }
+  return Math.min(Math.floor(spaces / 2), 6);
+}
 
 function parseLine(line: string): LineBlock {
   if (line.startsWith("### ")) return { type: "h3", content: line.slice(4) };
@@ -87,14 +97,54 @@ function parseLine(line: string): LineBlock {
 
   if (/^---+\s*$/.test(line)) return { type: "hr" };
 
-  if (/^[-*]\s+/.test(line)) return { type: "bullet", content: line.replace(/^[-*]\s+/, "") };
+  const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
+  if (bulletMatch) return { type: "bullet", content: bulletMatch[2], level: indentLevel(bulletMatch[1]) };
 
-  const numMatch = line.match(/^(\d+)\.\s+(.*)$/);
-  if (numMatch) return { type: "numbered", content: numMatch[2], number: numMatch[1] };
+  const numMatch = line.match(/^(\s*)(\d+)\.\s+(.*)$/);
+  if (numMatch) return { type: "numbered", content: numMatch[3], number: numMatch[2], level: indentLevel(numMatch[1]) };
 
   if (line.trim() === "") return { type: "empty" };
 
   return { type: "paragraph", content: line };
+}
+
+type ListItem = { content: string; number?: string; level: number; key: number };
+
+// CSS list-style markers cycle by nesting depth so levels are visually distinct.
+const UL_MARKERS = ["disc", "circle", "square"];
+
+// Build a nested <ul>/<ol> tree from a flat list of items that carry a `level`.
+// Items deeper than the current level become children of the preceding item.
+function renderList(items: ListItem[], ordered: boolean): JSX.Element {
+  const baseLevel = items[0].level;
+  const Tag = ordered ? "ol" : "ul";
+  const marker = ordered ? "decimal" : UL_MARKERS[baseLevel % UL_MARKERS.length];
+  const children: JSX.Element[] = [];
+  let idx = 0;
+
+  while (idx < items.length) {
+    const item = items[idx];
+    // Collect any deeper-nested items that follow this one into a sublist.
+    const nested: ListItem[] = [];
+    let j = idx + 1;
+    while (j < items.length && items[j].level > baseLevel) {
+      nested.push(items[j]);
+      j++;
+    }
+    children.push(
+      <li key={item.key} style={{ margin: "2px 0", lineHeight: 1.6, color: "var(--ink)" }}>
+        <InlineContent segments={parseInline(item.content)} />
+        {nested.length > 0 ? renderList(nested, nested[0].number !== undefined) : null}
+      </li>
+    );
+    idx = j;
+  }
+
+  return (
+    <Tag key={items[0].key} style={{ paddingLeft: 18, margin: "0 0 6px", listStyleType: marker }}>
+      {children}
+    </Tag>
+  );
 }
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
@@ -141,39 +191,23 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         elements.push(<div key={i} style={{ height: 6 }} />);
         break;
       case "bullet": {
-        const items: { content: string; key: number }[] = [];
+        const items: ListItem[] = [];
         while (i < blocks.length && blocks[i].type === "bullet") {
-          const b = blocks[i] as { type: "bullet"; content: string };
-          items.push({ content: b.content, key: i });
+          const b = blocks[i] as { type: "bullet"; content: string; level: number };
+          items.push({ content: b.content, level: b.level, key: i });
           i++;
         }
-        elements.push(
-          <ul key={items[0].key} style={{ paddingLeft: 16, margin: "0 0 6px", listStyleType: "disc" }}>
-            {items.map((item) => (
-              <li key={item.key} style={{ margin: "2px 0", lineHeight: 1.6, color: "var(--ink)" }}>
-                <InlineContent segments={parseInline(item.content)} />
-              </li>
-            ))}
-          </ul>
-        );
+        elements.push(renderList(items, false));
         continue; // skip i++ at end
       }
       case "numbered": {
-        const items: { content: string; number: string; key: number }[] = [];
+        const items: ListItem[] = [];
         while (i < blocks.length && blocks[i].type === "numbered") {
-          const b = blocks[i] as { type: "numbered"; content: string; number: string };
-          items.push({ content: b.content, number: b.number, key: i });
+          const b = blocks[i] as { type: "numbered"; content: string; number: string; level: number };
+          items.push({ content: b.content, number: b.number, level: b.level, key: i });
           i++;
         }
-        elements.push(
-          <ol key={items[0].key} style={{ paddingLeft: 16, margin: "0 0 6px", listStyleType: "decimal" }}>
-            {items.map((item) => (
-              <li key={item.key} style={{ margin: "2px 0", lineHeight: 1.6, color: "var(--ink)" }}>
-                <InlineContent segments={parseInline(item.content)} />
-              </li>
-            ))}
-          </ol>
-        );
+        elements.push(renderList(items, true));
         continue; // skip i++ at end
       }
       case "paragraph":
