@@ -25,6 +25,32 @@ function isExpired(habit: Habit): boolean {
   return !!habit.endDate && habit.endDate < TODAY;
 }
 
+// A habit is "done" when its end date has passed, OR it has reached its goal:
+// count-mode habits whose filled count hits the target, or date-range habits
+// where every day in the range has been checked off.
+function isFinished(habit: Habit, store: TrackItStore): boolean {
+  if (isExpired(habit)) return true;
+
+  const doneSet = new Set(
+    (store.habitEntries ?? [])
+      .filter((e) => e.habitId === habit.id && e.done)
+      .map((e) => e.date)
+  );
+
+  if (!habit.endDate && habit.targetCount) {
+    let filled = 0;
+    while (filled < habit.targetCount && doneSet.has(`count-${filled}`)) filled++;
+    return filled >= habit.targetCount;
+  }
+
+  if (habit.startDate && habit.endDate) {
+    const dates = getDatesInRange(habit.startDate, habit.endDate);
+    return dates.length > 0 && dates.every((d) => doneSet.has(d));
+  }
+
+  return false;
+}
+
 function habitLabel(habit: Habit): string {
   if (habit.startDate && habit.endDate) {
     const dates = getDatesInRange(habit.startDate, habit.endDate);
@@ -215,8 +241,8 @@ export function HabitView({ store, onSave, compact = false }: HabitViewProps) {
 
   // Newest first
   const allHabits = [...(store.habits ?? [])].sort((a, b) => b.createdAt - a.createdAt);
-  const activeHabits = allHabits.filter((h) => !isExpired(h));
-  const expiredHabits = allHabits.filter((h) => isExpired(h));
+  const activeHabits = allHabits.filter((h) => !isFinished(h, store));
+  const expiredHabits = allHabits.filter((h) => isFinished(h, store));
 
   function handleAdd() {
     const trimmed = name.trim();

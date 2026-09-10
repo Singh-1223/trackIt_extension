@@ -35,6 +35,34 @@ function isExpired(habit: Habit): boolean {
   return !!habit.endDate && habit.endDate < TODAY;
 }
 
+// A habit is "done" when its end date has passed, OR it has reached its goal:
+// count-mode habits whose filled count hits the target, or date-range habits
+// where every day in the range has been checked off.
+function isFinished(habit: Habit, store: TrackItStore): boolean {
+  if (isExpired(habit)) return true;
+
+  const doneSet = new Set(
+    (store.habitEntries ?? [])
+      .filter((e) => e.habitId === habit.id && e.done)
+      .map((e) => e.date)
+  );
+
+  // Count mode: no end date but has a target count
+  if (!habit.endDate && habit.targetCount) {
+    let filled = 0;
+    while (filled < habit.targetCount && doneSet.has(`count-${filled}`)) filled++;
+    return filled >= habit.targetCount;
+  }
+
+  // Date-range mode: every day in the range is checked off
+  if (habit.startDate && habit.endDate) {
+    const dates = getDatesInRange(habit.startDate, habit.endDate);
+    return dates.length > 0 && dates.every((d) => doneSet.has(d));
+  }
+
+  return false;
+}
+
 function habitLabel(habit: Habit): string {
   if (habit.startDate && habit.endDate) {
     const dates = getDatesInRange(habit.startDate, habit.endDate);
@@ -243,10 +271,10 @@ export function HabitView({ store, onSave, compact = false, hideAddForm = false 
   // Newest first
   const allHabits = [...(store.habits ?? [])].sort((a, b) => b.createdAt - a.createdAt);
 
-  // Active = no endDate OR endDate >= today
-  const activeHabits = allHabits.filter((h) => !isExpired(h));
-  // Expired = endDate passed
-  const expiredHabits = allHabits.filter((h) => isExpired(h));
+  // Active = still ongoing (not expired and goal not yet reached)
+  const activeHabits = allHabits.filter((h) => !isFinished(h, store));
+  // Completed / Expired = end date passed OR goal reached
+  const expiredHabits = allHabits.filter((h) => isFinished(h, store));
 
   // In compact mode only show active; in full view active only (expired shown separately below)
   const visibleHabits = activeHabits;
