@@ -13,8 +13,8 @@ export function AppLockSettings() {
     event.preventDefault();
     setError("");
     setMessage("");
-    if (newPassword.length < 8) {
-      setError("Choose at least 8 characters.");
+    if (newPassword.length < 4) {
+      setError("Choose at least 4 characters.");
       return;
     }
     if (newPassword !== confirmation) {

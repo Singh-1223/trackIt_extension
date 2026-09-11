@@ -89,8 +89,8 @@ function LockScreen({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLocalError("");
-    if (isSetup && password.length < 8) {
-      setLocalError("Choose at least 8 characters.");
+    if (isSetup && password.length < 4) {
+      setLocalError("Choose at least 4 characters.");
       return;
     }
     if (isSetup && password !== confirmation) {
