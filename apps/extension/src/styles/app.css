@@ -1983,8 +1983,13 @@ details[open] .buildup-habit-chevron {
 .reflection-modal header, .reflection-modal footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .reflection-modal h2, .reflection-modal h1 { margin: 0; }
 .reflection-modal label { display: grid; gap: 6px; font-size: .88rem; font-weight: 700; color: var(--ink); }
+/* Field controls inherit the bold label weight via font shorthand; reset them
+   to normal so typed content isn't rendered bold. */
+.reflection-modal input,
+.reflection-modal select,
+.reflection-modal textarea { font-weight: 400; }
 .reflection-modal select { border: 1px solid var(--border); border-radius: 8px; padding: 9px; background: var(--surface-strong); color: var(--ink); }
-.reflection-editor { min-height: 260px; max-height: 420px; resize: vertical; overflow: auto; border: 1px solid var(--border); border-radius: 10px; padding: 11px; background: var(--surface-strong); color: var(--ink); font: inherit; line-height: 1.55; }
+.reflection-editor { min-height: 260px; max-height: 420px; resize: vertical; overflow: auto; border: 1px solid var(--border); border-radius: 10px; padding: 11px; background: var(--surface-strong); color: var(--ink); font: inherit; font-weight: 400; line-height: 1.55; }
 .reflection-reader { min-height: 250px; }
 .reflection-reader-content { overflow: auto; line-height: 1.65; }
 .reflection-tags { display: flex; flex-wrap: wrap; gap: 7px; }
